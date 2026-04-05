@@ -202,7 +202,7 @@ export default function Dashboard() {
           subtitle={`${Math.round((stats.users_active / stats.total_user) * 100)}% toplam`}
           icon={<CheckCircle className="w-5 h-5 text-chart-2" />}
           colorClass="stat-card-active"
-          delay={0.05}
+          delay={0}
         />
         <StatCard
           title="Suresi Dolmus"
@@ -210,7 +210,7 @@ export default function Dashboard() {
           subtitle={`${stats.users_limited} limitli`}
           icon={<Clock className="w-5 h-5 text-destructive" />}
           colorClass="stat-card-expired"
-          delay={0.1}
+          delay={0}
         />
         <StatCard
           title="Devre Disi"
@@ -218,7 +218,7 @@ export default function Dashboard() {
           subtitle={`${stats.users_on_hold} beklemede`}
           icon={<Ban className="w-5 h-5 text-muted-foreground" />}
           colorClass="stat-card-disabled"
-          delay={0.15}
+          delay={0}
         />
       </div>
 
@@ -226,7 +226,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={{ duration: 0.3 }}
           className="bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center gap-2 mb-4">
@@ -248,7 +248,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.25 }}
+          transition={{ duration: 0.3 }}
           className="bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center gap-2 mb-4">
@@ -260,7 +260,7 @@ export default function Dashboard() {
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${memPercent}%` }}
-              transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+              transition={{ duration: 0.4 }}
               className="h-full rounded-full bg-chart-2"
             />
           </div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
+          transition={{ duration: 0.3 }}
           className="bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center gap-2 mb-4">
@@ -302,7 +302,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.35 }}
+          transition={{ duration: 0.3 }}
           className="lg:col-span-3 bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center justify-between mb-5">
@@ -360,7 +360,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.4 }}
+          transition={{ duration: 0.3 }}
           className="bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center gap-2 mb-5">
@@ -412,7 +412,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.45 }}
+          transition={{ duration: 0.3 }}
           className="bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center gap-2 mb-5">
@@ -458,7 +458,7 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
+          transition={{ duration: 0.3 }}
           className="bg-card border border-card-border rounded-2xl p-5"
         >
           <div className="flex items-center gap-2 mb-5">

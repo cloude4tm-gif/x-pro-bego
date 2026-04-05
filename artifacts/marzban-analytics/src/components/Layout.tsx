@@ -26,12 +26,36 @@ const navItems: NavItem[] = [
   { href: "/nodes", label: "Nodelar", icon: <Server className="w-5 h-5" /> },
 ];
 
+function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; onClick?: () => void }) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+        active
+          ? "bg-primary/10 text-primary border border-primary/20"
+          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
+      }`}
+    >
+      <span className={active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}>
+        {item.icon}
+      </span>
+      {item.label}
+      {active && <ChevronRight className="w-4 h-4 ml-auto text-primary" />}
+    </Link>
+  );
+}
+
 export default function Layout({ children }: { children: ReactNode }) {
   const { auth, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const hostname = auth ? new URL(auth.baseUrl).hostname : "";
+  const hostname = auth
+    ? auth.isDemo
+      ? "Demo Modu"
+      : (() => { try { return new URL(auth.baseUrl).hostname; } catch { return auth.baseUrl; } })()
+    : "";
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -41,34 +65,24 @@ export default function Layout({ children }: { children: ReactNode }) {
             <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
               <Shield className="w-5 h-5 text-primary" />
             </div>
-            <div>
-              <div className="text-sm font-bold text-foreground">Marzban</div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-bold text-foreground">Marzban</div>
+                {auth?.isDemo && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-chart-3/20 text-chart-3 text-[10px] font-bold tracking-wide border border-chart-3/30">
+                    DEMO
+                  </span>
+                )}
+              </div>
               <div className="text-xs text-muted-foreground truncate max-w-[140px]">{hostname}</div>
             </div>
           </div>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = location === item.href;
-            return (
-              <Link key={item.href} href={item.href}>
-                <a
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
-                    active
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
-                  }`}
-                >
-                  <span className={active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                  {active && <ChevronRight className="w-4 h-4 ml-auto text-primary" />}
-                </a>
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <NavLink key={item.href} item={item} active={location === item.href} />
+          ))}
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
@@ -138,24 +152,14 @@ export default function Layout({ children }: { children: ReactNode }) {
                 </button>
               </div>
               <nav className="flex-1 p-3 space-y-1">
-                {navItems.map((item) => {
-                  const active = location === item.href;
-                  return (
-                    <Link key={item.href} href={item.href}>
-                      <a
-                        onClick={() => setMobileOpen(false)}
-                        className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                          active ? "bg-primary/10 text-primary border border-primary/20" : "text-sidebar-foreground hover:bg-sidebar-accent"
-                        }`}
-                      >
-                        <span className={active ? "text-primary" : "text-muted-foreground"}>
-                          {item.icon}
-                        </span>
-                        {item.label}
-                      </a>
-                    </Link>
-                  );
-                })}
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.href}
+                    item={item}
+                    active={location === item.href}
+                    onClick={() => setMobileOpen(false)}
+                  />
+                ))}
               </nav>
               <div className="p-3 border-t border-sidebar-border">
                 <button
