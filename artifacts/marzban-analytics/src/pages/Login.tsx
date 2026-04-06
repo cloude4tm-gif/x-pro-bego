@@ -1,166 +1,170 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { MarzbanClient } from "@/lib/marzban";
-import { Server, Key, Loader2, AlertCircle, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
-import XProLogo from "@/components/XProLogo";
+import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Box,
+  Button,
+  chakra,
+  FormControl,
+  HStack,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { FC, useEffect, useState } from "react";
+import { FieldValues, useForm } from "react-hook-form";
+import { useLocation, useNavigate } from "react-router-dom";
+import { z } from "zod";
+import { Footer } from "components/Footer";
+import { Input } from "components/Input";
+import { fetch, getServerUrl, setServerUrl } from "service/http";
+import { removeAuthToken, setAuthToken } from "utils/authStorage";
+import { useTranslation } from "react-i18next";
+import { Language } from "components/Language";
+import { APP_NAME } from "constants/Project";
+import { XProLogo } from "assets/XProLogo";
 
-export default function Login() {
-  const { login, loginDemo } = useAuth();
-  const [baseUrl, setBaseUrl] = useState("https://");
-  const [token, setToken] = useState("");
+const schema = z.object({
+  serverUrl: z.string().min(1, "login.fieldRequired"),
+  username: z.string().min(1, "login.fieldRequired"),
+  password: z.string().min(1, "login.fieldRequired"),
+});
+
+export const LogoIcon = chakra(XProLogo, {
+  baseStyle: {
+    w: 12,
+    h: 12,
+  },
+});
+
+const LoginIcon = chakra(ArrowRightOnRectangleIcon, {
+  baseStyle: {
+    w: 5,
+    h: 5,
+    strokeWidth: "2px",
+  },
+});
+
+export const Login: FC = () => {
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  let location = useLocation();
+  const {
+    register,
+    formState: { errors },
+    handleSubmit,
+    setValue,
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      serverUrl: getServerUrl(),
+      username: "",
+      password: "",
+    },
+  });
 
   useEffect(() => {
-    if (window.location.search.includes("demo")) {
-      loginDemo();
+    removeAuthToken();
+    if (location.pathname !== "/login") {
+      navigate("/login", { replace: true });
     }
-  }, [loginDemo]);
+    const stored = getServerUrl();
+    if (stored) setValue("serverUrl", stored);
+  }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+  const login = (values: FieldValues) => {
+    setError("");
+    setServerUrl(values.serverUrl as string);
+    const formData = new FormData();
+    formData.append("username", values.username);
+    formData.append("password", values.password);
+    formData.append("grant_type", "password");
     setLoading(true);
-
-    try {
-      const client = new MarzbanClient({ baseUrl: baseUrl.trim(), token: token.trim() });
-      await client.getSystemStats();
-      login(baseUrl.trim(), token.trim());
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Baglanti basarisiz";
-      if (msg.includes("401")) {
-        setError("Gecersiz token. Lutfen admin token'ınızı kontrol edin.");
-      } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("CORS")) {
-        setError("Sunucuya ulasilamıyor. URL'yi ve CORS ayarlarini kontrol edin.");
-      } else {
-        setError(`Baglanti hatasi: ${msg}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
+    fetch("/admin/token", { method: "post", body: formData })
+      .then(({ access_token: token }) => {
+        setAuthToken(token);
+        navigate("/");
+      })
+      .catch((err) => {
+        setError(
+          err?.response?._data?.detail || err?.message || "Login failed"
+        );
+      })
+      .finally(setLoading.bind(null, false));
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-chart-2/5 blur-3xl" />
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: "radial-gradient(hsl(var(--border)) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-            opacity: 0.3,
-          }}
-        />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative w-full max-w-md mx-4"
-      >
-        <div className="bg-card border border-card-border rounded-2xl p-8 shadow-2xl">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <XProLogo size={56} animated />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">X-Pro Bego</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Gelismis VPN analitik ve yonetim paneli</p>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            type="button"
-            onClick={loginDemo}
-            className="w-full mb-5 py-3.5 px-4 rounded-xl border-2 border-dashed border-primary/40 hover:border-primary/70 bg-primary/5 hover:bg-primary/10 text-primary font-semibold text-sm transition-all flex items-center justify-center gap-2.5 group"
-          >
-            <Sparkles className="w-4 h-4 group-hover:animate-pulse" />
-            Demo Modunda Goruntule
-            <span className="ml-1 px-2 py-0.5 rounded-full bg-primary/20 text-xs font-medium">CANLI DEMO</span>
-          </motion.button>
-
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted-foreground">veya gercek sunucuya baglan</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                <span className="flex items-center gap-2">
-                  <Server className="w-4 h-4 text-primary" />
-                  Marzban URL
-                </span>
-              </label>
-              <input
-                type="url"
-                value={baseUrl}
-                onChange={e => setBaseUrl(e.target.value)}
-                placeholder="https://panel.example.com"
-                className="w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-              />
-              <p className="mt-1.5 text-xs text-muted-foreground">Marzban panelinin tam URL'si (port dahil)</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                <span className="flex items-center gap-2">
-                  <Key className="w-4 h-4 text-primary" />
-                  Admin Token
-                </span>
-              </label>
-              <input
-                type="password"
-                value={token}
-                onChange={e => setToken(e.target.value)}
-                placeholder="Bearer token'ınızı girin"
-                className="w-full px-4 py-3 rounded-xl bg-background border border-input text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all font-mono text-sm"
-              />
-              <p className="mt-1.5 text-xs text-muted-foreground">Marzban admin token'i (sudo admin)</p>
-            </div>
-
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm"
-              >
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </motion.div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading || !baseUrl || !token}
-              className="w-full py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Baglanıyor...
-                </>
-              ) : (
-                "Panele Baglan"
-              )}
-            </button>
-          </form>
-
-          <div className="mt-5 p-4 rounded-xl bg-muted/50 border border-border">
-            <p className="text-xs text-muted-foreground">
-              <strong className="text-foreground">Token nasil alinir?</strong>
-              <br />
-              Marzban CLI:{" "}
-              <code className="text-primary font-mono">marzban cli admin token -u admin</code>
-            </p>
-          </div>
-        </div>
-      </motion.div>
-    </div>
+    <VStack justifyContent="space-between" minH="100vh" p="6" w="full">
+      <Box w="full">
+        <HStack justifyContent="end" w="full">
+          <Language />
+        </HStack>
+        <HStack w="full" justifyContent="center" alignItems="center">
+          <Box w="full" maxW="360px" mt="6">
+            <VStack alignItems="center" w="full" spacing={1}>
+              <LogoIcon />
+              <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                {APP_NAME}
+              </Text>
+              <Text color="gray.600" _dark={{ color: "gray.400" }} fontSize="sm">
+                {t("login.welcomeBack")}
+              </Text>
+            </VStack>
+            <Box w="full" maxW="320px" m="auto" pt="4">
+              <form onSubmit={handleSubmit(login)}>
+                <VStack mt={4} rowGap={3}>
+                  <FormControl>
+                    <Input
+                      w="full"
+                      placeholder="Server URL (e.g. https://marzban.example.com)"
+                      {...register("serverUrl")}
+                      error={t(errors?.serverUrl?.message as string)}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <Input
+                      w="full"
+                      placeholder={t("username")}
+                      {...register("username")}
+                      error={t(errors?.username?.message as string)}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <Input
+                      w="full"
+                      type="password"
+                      placeholder={t("password")}
+                      {...register("password")}
+                      error={t(errors?.password?.message as string)}
+                    />
+                  </FormControl>
+                  {error && (
+                    <Alert status="error" rounded="md">
+                      <AlertIcon />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    isLoading={loading}
+                    type="submit"
+                    w="full"
+                    colorScheme="primary"
+                  >
+                    <LoginIcon marginRight={1} />
+                    {t("login")}
+                  </Button>
+                </VStack>
+              </form>
+            </Box>
+          </Box>
+        </HStack>
+      </Box>
+      <Footer />
+    </VStack>
   );
-}
+};
+
+export default Login;

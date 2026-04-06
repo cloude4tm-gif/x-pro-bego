@@ -18,28 +18,39 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ## Artifacts
 
-### Marzban Analytics Dashboard (`artifacts/marzban-analytics`)
+### X-Pro Bego — Marzban Panel (`artifacts/marzban-analytics`)
 - **Type**: react-vite, hosted at `/`
-- **Purpose**: Advanced analytics dashboard for Marzban VPN panel
-- **Features**:
-  - Login page (Marzban URL + admin token)
-  - Real-time system stats (CPU, RAM, bandwidth)
-  - User status breakdown (pie chart)
-  - Live bandwidth monitoring (area chart)
-  - Top users by usage
-  - Node statistics and usage comparison
-  - Full user list with pagination, search, and status filtering
-  - Node details page
-- **Tech**: React, Recharts, Framer Motion, Tailwind CSS (dark theme)
-- **Data**: Connects directly to any Marzban instance via its REST API
+- **Purpose**: Full Marzban VPN management panel rebranded as "X-Pro Bego"
+- **Features** (all original Marzban features preserved):
+  - Login page with configurable Server URL field (stores in localStorage via `xprobego_server_url` key)
+  - Full user management (create/edit/delete/search/paginate)
+  - Node settings and usage
+  - Host settings
+  - Core (Xray) settings with live log streaming (WebSocket)
+  - System stats (CPU, RAM, bandwidth)
+  - Multi-language support (en/fa/ru/zh)
+  - Dark/light theme toggle
+  - **NEW**: Settings page (`/settings`) with Admin Manager (create/edit/delete admins, set sudo/no-sudo)
+- **Branding changes from Marzban**:
+  - Title: "X-Pro Bego" (page title, header, login screen)
+  - Logo: Custom 3D animated cube SVG with "X" letter (`XProLogo.tsx`)
+  - Footer: "X-Pro Bego — Powered by Marzban"
+  - Removed: GitHub star button, Donation menu item
+- **Tech**: React 18, Chakra UI v2, React Router v6, React Query v3, zustand, ofetch, i18next, vite-plugin-svgr
+- **API**: Connects dynamically to any Marzban instance (server URL set at login)
+- **Key files**:
+  - `src/pages/Login.tsx` — branded login with server URL field
+  - `src/pages/Settings.tsx` — Admin Manager (NEW)
+  - `src/pages/Router.tsx` — routing with auth guard
+  - `src/service/http.ts` — runtime-configurable API base URL
+  - `src/constants/Project.ts` — APP_NAME, SERVER_URL_KEY
+  - `src/assets/XProLogo.tsx` — inline 3D cube SVG component
+  - `public/statics/locales/` — i18n translation files (en/fa/ru/zh)
 
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
-- `pnpm --filter @workspace/marzban-analytics run dev` — run Marzban analytics dashboard
+- `pnpm --filter @workspace/marzban-analytics run dev` — run X-Pro Bego panel
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
