@@ -72,6 +72,22 @@ export interface UserUsage {
   used_traffic: number;
 }
 
+export interface Admin {
+  username: string;
+  is_sudo: boolean;
+  telegram_id?: number | null;
+  discord_webhook?: string | null;
+  password?: string;
+}
+
+export interface CreateAdminPayload {
+  username: string;
+  password: string;
+  is_sudo: boolean;
+  telegram_id?: number | null;
+  discord_webhook?: string | null;
+}
+
 export class MarzbanClient {
   private baseUrl: string;
   private token: string;
@@ -81,11 +97,13 @@ export class MarzbanClient {
     this.token = config.token;
   }
 
-  private async request<T>(path: string): Promise<T> {
+  private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${this.baseUrl}/api${path}`, {
+      ...options,
       headers: {
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",
+        ...(options?.headers ?? {}),
       },
     });
 
@@ -94,6 +112,7 @@ export class MarzbanClient {
       throw new Error(`${res.status}: ${err}`);
     }
 
+    if (res.status === 204) return undefined as unknown as T;
     return res.json() as Promise<T>;
   }
 
@@ -142,6 +161,37 @@ export class MarzbanClient {
     if (end) q.set("end", end);
     const qs = q.toString();
     return this.request<{ usages: Array<{ username: string; used_traffic: number; node_id: number | null; node_name: string }> }>(`/users/usage${qs ? "?" + qs : ""}`);
+  }
+
+  // Admin Management
+  async getAdmins(): Promise<Admin[]> {
+    return this.request<Admin[]>("/admins");
+  }
+
+  async createAdmin(payload: CreateAdminPayload): Promise<Admin> {
+    return this.request<Admin>("/admin", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateAdmin(username: string, payload: Partial<Admin & { password?: string }>): Promise<Admin> {
+    return this.request<Admin>(`/admin/${username}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteAdmin(username: string): Promise<void> {
+    return this.request<void>(`/admin/${username}`, { method: "DELETE" });
+  }
+
+  // User IP Limit (via note field workaround – Marzban doesn't have native IP limit API)
+  async setUserNote(username: string, note: string): Promise<User> {
+    return this.request<User>(`/user/${username}`, {
+      method: "PUT",
+      body: JSON.stringify({ note }),
+    });
   }
 }
 

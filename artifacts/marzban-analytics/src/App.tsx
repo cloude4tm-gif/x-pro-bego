@@ -7,6 +7,7 @@ import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import UsersPage from "@/pages/Users";
 import NodesPage from "@/pages/Nodes";
+import SettingsPage from "@/pages/Settings";
 import Layout from "@/components/Layout";
 
 const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ function AppRoutes() {
         <Route path="/" component={Dashboard} />
         <Route path="/users" component={UsersPage} />
         <Route path="/nodes" component={NodesPage} />
+        <Route path="/settings" component={SettingsPage} />
         <Route>
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="text-center">

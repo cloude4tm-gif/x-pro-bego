@@ -1,4 +1,4 @@
-import { SystemStats, User, Node, NodesUsageResponse } from "@/lib/marzban";
+import { SystemStats, User, Node, NodesUsageResponse, Admin, CreateAdminPayload } from "@/lib/marzban";
 
 function sleep(ms: number) {
   return new Promise(r => setTimeout(r, ms));
@@ -31,6 +31,11 @@ const DEMO_NODES: Node[] = [
   { id: 2, name: "NL-Amsterdam-01", address: "nl-01.vpnserver.net", port: 62050, api_port: 62051, status: "connected", xray_version: "1.8.11", message: null, add_as_new_host: true },
   { id: 3, name: "FI-Helsinki-01", address: "fi-01.vpnserver.net", port: 62050, api_port: 62051, status: "error", xray_version: null, message: "Connection timeout after 30s", add_as_new_host: false },
   { id: 4, name: "US-NewYork-01", address: "us-ny.vpnserver.net", port: 62050, api_port: 62051, status: "connected", xray_version: "1.8.10", message: null, add_as_new_host: true },
+];
+
+let DEMO_ADMINS: Admin[] = [
+  { username: "admin", is_sudo: true, telegram_id: null, discord_webhook: null },
+  { username: "manager1", is_sudo: false, telegram_id: null, discord_webhook: null },
 ];
 
 export class DemoMarzbanClient {
@@ -97,5 +102,42 @@ export class DemoMarzbanClient {
   async getUsersUsage() {
     await sleep(200);
     return { usages: [] };
+  }
+
+  async getAdmins(): Promise<Admin[]> {
+    await sleep(300);
+    return [...DEMO_ADMINS];
+  }
+
+  async createAdmin(payload: CreateAdminPayload): Promise<Admin> {
+    await sleep(500);
+    const newAdmin: Admin = {
+      username: payload.username,
+      is_sudo: payload.is_sudo,
+      telegram_id: payload.telegram_id ?? null,
+      discord_webhook: payload.discord_webhook ?? null,
+    };
+    DEMO_ADMINS = [...DEMO_ADMINS, newAdmin];
+    return newAdmin;
+  }
+
+  async updateAdmin(username: string, payload: Partial<Admin & { password?: string }>): Promise<Admin> {
+    await sleep(400);
+    DEMO_ADMINS = DEMO_ADMINS.map(a =>
+      a.username === username ? { ...a, ...payload } : a
+    );
+    return DEMO_ADMINS.find(a => a.username === username)!;
+  }
+
+  async deleteAdmin(username: string): Promise<void> {
+    await sleep(400);
+    DEMO_ADMINS = DEMO_ADMINS.filter(a => a.username !== username);
+  }
+
+  async setUserNote(username: string, note: string): Promise<User> {
+    await sleep(300);
+    const user = DEMO_USERS.find(u => u.username === username);
+    if (user) user.note = note;
+    return user!;
   }
 }

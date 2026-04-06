@@ -6,13 +6,14 @@ import {
   Users,
   Server,
   LogOut,
-  Shield,
   Menu,
   X,
   ChevronRight,
   Activity,
+  Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import XProLogo from "@/components/XProLogo";
 
 interface NavItem {
   href: string;
@@ -24,6 +25,7 @@ const navItems: NavItem[] = [
   { href: "/", label: "Genel Bakis", icon: <LayoutDashboard className="w-5 h-5" /> },
   { href: "/users", label: "Kullanicilar", icon: <Users className="w-5 h-5" /> },
   { href: "/nodes", label: "Nodelar", icon: <Server className="w-5 h-5" /> },
+  { href: "/settings", label: "Ayarlar", icon: <Settings className="w-5 h-5" /> },
 ];
 
 function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; onClick?: () => void }) {
@@ -62,12 +64,10 @@ export default function Layout({ children }: { children: ReactNode }) {
       <aside className="hidden lg:flex flex-col w-64 bg-sidebar border-r border-sidebar-border shrink-0">
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <Shield className="w-5 h-5 text-primary" />
-            </div>
+            <XProLogo size={36} animated />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <div className="text-sm font-bold text-foreground">Marzban</div>
+                <div className="text-sm font-bold text-foreground">X-Pro Bego</div>
                 {auth?.isDemo && (
                   <span className="px-1.5 py-0.5 rounded-md bg-chart-3/20 text-chart-3 text-[10px] font-bold tracking-wide border border-chart-3/30">
                     DEMO
@@ -104,8 +104,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-sidebar border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" />
-            <span className="font-bold text-sm">Marzban Analytics</span>
+            <XProLogo size={28} animated={false} />
+            <span className="font-bold text-sm">X-Pro Bego</span>
           </div>
           <button
             onClick={() => setMobileOpen(true)}
@@ -139,11 +139,9 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <div className="p-5 border-b border-sidebar-border flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-primary" />
-                  </div>
+                  <XProLogo size={32} animated />
                   <div>
-                    <div className="text-sm font-bold">Marzban</div>
+                    <div className="text-sm font-bold">X-Pro Bego</div>
                     <div className="text-xs text-muted-foreground truncate max-w-[120px]">{hostname}</div>
                   </div>
                 </div>

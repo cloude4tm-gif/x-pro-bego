@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { MarzbanClient } from "@/lib/marzban";
-import { Shield, Server, Key, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Server, Key, Loader2, AlertCircle, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
+import XProLogo from "@/components/XProLogo";
 
 export default function Login() {
   const { login, loginDemo } = useAuth();
@@ -63,11 +64,11 @@ export default function Login() {
       >
         <div className="bg-card border border-card-border rounded-2xl p-8 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-4">
-              <Shield className="w-8 h-8 text-primary" />
+            <div className="flex justify-center mb-4">
+              <XProLogo size={56} animated />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Marzban Analytics</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Gelismis istatistik ve analitik paneli</p>
+            <h1 className="text-2xl font-bold text-foreground">X-Pro Bego</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Gelismis VPN analitik ve yonetim paneli</p>
           </div>
 
           <motion.button
