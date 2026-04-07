@@ -19,6 +19,10 @@ export const fetcher = <T = any>(
   url: string,
   ops: FetchOptions<"json"> = {}
 ) => {
+  const serverUrl = getServerUrl();
+  if (!serverUrl) {
+    return Promise.reject(new Error("No server URL configured"));
+  }
   const token = getAuthToken();
   if (token) {
     ops["headers"] = {
@@ -26,7 +30,7 @@ export const fetcher = <T = any>(
       Authorization: `Bearer ${getAuthToken()}`,
     };
   }
-  return $fetch<T>(url, { ...ops, baseURL: getServerUrl() });
+  return $fetch<T>(url, { ...ops, baseURL: serverUrl });
 };
 
 export const fetch = fetcher;
