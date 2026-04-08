@@ -3,7 +3,7 @@ import { getAuthToken } from "utils/authStorage";
 import { SERVER_URL_KEY } from "constants/Project";
 
 export function getServerUrl(): string {
-  return localStorage.getItem(SERVER_URL_KEY) || import.meta.env.VITE_BASE_API || "";
+  return localStorage.getItem(SERVER_URL_KEY) || import.meta.env.VITE_BASE_API || (typeof window !== "undefined" ? window.location.origin : "");
 }
 
 export function setServerUrl(url: string): void {
