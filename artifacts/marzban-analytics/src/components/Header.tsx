@@ -9,6 +9,7 @@ import {
   MenuList,
   Text,
   useColorMode,
+  VStack,
 } from "@chakra-ui/react";
 import {
   ArrowLeftOnRectangleIcon,
@@ -16,7 +17,9 @@ import {
   ChartPieIcon,
   Cog6ToothIcon,
   DocumentMinusIcon,
+  GlobeAltIcon,
   LinkIcon,
+  LockClosedIcon,
   MoonIcon,
   SquaresPlusIcon,
   SunIcon,
@@ -29,6 +32,7 @@ import { Link } from "react-router-dom";
 import { updateThemeColor } from "utils/themeColor";
 import { Language } from "./Language";
 import useGetUser from "hooks/useGetUser";
+import { XProLogo } from "assets/XProLogo";
 
 type HeaderProps = {
   actions?: ReactNode;
@@ -50,6 +54,8 @@ const NodesIcon = chakra(SquaresPlusIcon, iconProps);
 const NodesUsageIcon = chakra(ChartPieIcon, iconProps);
 const ResetUsageIcon = chakra(DocumentMinusIcon, iconProps);
 const AdminSettingsIcon = chakra(WrenchScrewdriverIcon, iconProps);
+const AdminLimitsIcon = chakra(LockClosedIcon, iconProps);
+const ConnectionIcon = chakra(GlobeAltIcon, iconProps);
 
 export const Header: FC<HeaderProps> = ({ actions }) => {
   const { userData, getUserIsSuccess, getUserIsPending } = useGetUser();
@@ -81,9 +87,30 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
       }}
       position="relative"
     >
-      <Text as="h1" fontWeight="semibold" fontSize="2xl">
-        {t("users")}
-      </Text>
+      <HStack spacing={3} alignItems="center">
+        <Box w="40px" h="40px">
+          <XProLogo />
+        </Box>
+        <VStack spacing={0} alignItems="flex-start">
+          <Text
+            fontWeight="bold"
+            fontSize="lg"
+            lineHeight="1.1"
+            _dark={{ color: "white" }}
+          >
+            X-Pro
+          </Text>
+          <Text
+            fontWeight="bold"
+            fontSize="sm"
+            lineHeight="1.1"
+            color="primary.400"
+          >
+            Bego Panel
+          </Text>
+        </VStack>
+      </HStack>
+
       <Box overflow="auto" css={{ direction: "rtl" }}>
         <HStack alignItems="center">
           <Menu>
@@ -94,11 +121,11 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
               icon={<SettingsIcon />}
               position="relative"
             />
-            <MenuList minW="170px" zIndex={99999} className="menuList">
+            <MenuList minW="190px" zIndex={99999} className="menuList">
               {isSudo() && (
                 <>
                   <MenuItem
-                    maxW="170px"
+                    maxW="190px"
                     fontSize="sm"
                     icon={<HostsIcon />}
                     onClick={onEditingHosts.bind(null, true)}
@@ -106,7 +133,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
                     {t("header.hostSettings")}
                   </MenuItem>
                   <MenuItem
-                    maxW="170px"
+                    maxW="190px"
                     fontSize="sm"
                     icon={<NodesIcon />}
                     onClick={onEditingNodes.bind(null, true)}
@@ -114,7 +141,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
                     {t("header.nodeSettings")}
                   </MenuItem>
                   <MenuItem
-                    maxW="170px"
+                    maxW="190px"
                     fontSize="sm"
                     icon={<NodesUsageIcon />}
                     onClick={onShowingNodesUsage.bind(null, true)}
@@ -122,22 +149,52 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
                     {t("header.nodesUsage")}
                   </MenuItem>
                   <MenuItem
-                    maxW="170px"
+                    maxW="190px"
                     fontSize="sm"
                     icon={<ResetUsageIcon />}
                     onClick={onResetAllUsage.bind(null, true)}
                   >
                     {t("resetAllUsage")}
                   </MenuItem>
+                  <Link to="/admin-limits">
+                    <MenuItem maxW="190px" fontSize="sm" icon={<AdminLimitsIcon />}>
+                      Admin Limits
+                    </MenuItem>
+                  </Link>
                   <Link to="/settings">
-                    <MenuItem maxW="170px" fontSize="sm" icon={<AdminSettingsIcon />}>
-                      Settings
+                    <MenuItem maxW="190px" fontSize="sm" icon={<AdminSettingsIcon />}>
+                      Admin Manager
+                    </MenuItem>
+                  </Link>
+                  <Link to="/connection-logs">
+                    <MenuItem maxW="190px" fontSize="sm" icon={<ConnectionIcon />}>
+                      Connection Logs
                     </MenuItem>
                   </Link>
                 </>
               )}
+              <MenuItem
+                maxW="190px"
+                fontSize="sm"
+                icon={<span>💎</span>}
+                as="a"
+                href="https://t.me/xprobego"
+                target="_blank"
+              >
+                Happ Crypto
+              </MenuItem>
+              <MenuItem
+                maxW="190px"
+                fontSize="sm"
+                icon={<span>🎁</span>}
+                as="a"
+                href="https://t.me/xprobego"
+                target="_blank"
+              >
+                Donation
+              </MenuItem>
               <Link to="/login">
-                <MenuItem maxW="170px" fontSize="sm" icon={<LogoutIcon />}>
+                <MenuItem maxW="190px" fontSize="sm" icon={<LogoutIcon />}>
                   {t("header.logout")}
                 </MenuItem>
               </Link>

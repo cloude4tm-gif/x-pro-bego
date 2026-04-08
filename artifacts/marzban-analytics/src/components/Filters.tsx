@@ -10,6 +10,7 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
+  Select,
   Spinner,
 } from "@chakra-ui/react";
 import {
@@ -20,8 +21,9 @@ import {
 import classNames from "classnames";
 import { useDashboard } from "contexts/DashboardContext";
 import debounce from "lodash.debounce";
-import React, { FC, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { fetch } from "service/http";
 
 const iconProps = {
   baseStyle: {
@@ -48,6 +50,18 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
     useDashboard();
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [admins, setAdmins] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/admins")
+      .then((data: any) => {
+        if (Array.isArray(data)) {
+          setAdmins(data.map((a: any) => a.username));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value);
     setSearchField(e.target.value);
@@ -60,12 +74,21 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
       search: "",
     });
   };
+
+  const onAdminChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({
+      ...filters,
+      offset: 0,
+      admin: e.target.value || undefined,
+    });
+  };
+
   return (
     <Grid
       id="filters"
       templateColumns={{
         lg: "repeat(3, 1fr)",
-        md: "repeat(4, 1fr)",
+        md: "repeat(3, 1fr)",
         base: "repeat(1, 1fr)",
       }}
       position="sticky"
@@ -75,14 +98,14 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
       rowGap={4}
       gap={{
         lg: 4,
-        base: 0,
+        base: 2,
       }}
       bg="var(--chakra-colors-chakra-body-bg)"
       py={4}
       zIndex="docked"
       {...props}
     >
-      <GridItem colSpan={{ base: 1, md: 2, lg: 1 }} order={{ base: 2, md: 1 }}>
+      <GridItem colSpan={{ base: 1, md: 1, lg: 1 }} order={{ base: 3, md: 1 }}>
         <InputGroup>
           <InputLeftElement pointerEvents="none" children={<SearchIcon />} />
           <Input
@@ -91,7 +114,6 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
             borderColor="light-border"
             onChange={onChange}
           />
-
           <InputRightElement>
             {loading && <Spinner size="xs" />}
             {filters.search && filters.search.length > 0 && (
@@ -107,7 +129,24 @@ export const Filters: FC<FilterProps> = ({ ...props }) => {
           </InputRightElement>
         </InputGroup>
       </GridItem>
-      <GridItem colSpan={2} order={{ base: 1, md: 2 }}>
+
+      <GridItem colSpan={{ base: 1, md: 1, lg: 1 }} order={{ base: 2, md: 2 }}>
+        <Select
+          placeholder="All Admins"
+          size="md"
+          onChange={onAdminChange}
+          value={filters.admin || ""}
+          _dark={{ borderColor: "gray.600" }}
+        >
+          {admins.map((admin) => (
+            <option key={admin} value={admin}>
+              {admin}
+            </option>
+          ))}
+        </Select>
+      </GridItem>
+
+      <GridItem colSpan={{ base: 1, md: 1, lg: 1 }} order={{ base: 1, md: 3 }}>
         <HStack justifyContent="flex-end" alignItems="center" h="full">
           <IconButton
             aria-label="refresh users"

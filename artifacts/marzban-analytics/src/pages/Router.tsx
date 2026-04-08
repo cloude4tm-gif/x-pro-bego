@@ -4,6 +4,8 @@ import { getAuthToken } from "../utils/authStorage";
 import { Dashboard } from "./Dashboard";
 import { Login } from "./Login";
 import { Settings } from "./Settings";
+import { AdminLimits } from "./AdminLimits";
+import { ConnectionLogs } from "./ConnectionLogs";
 
 const fetchAdminLoader = () => {
     const token = getAuthToken();
@@ -38,6 +40,18 @@ export const router = createHashRouter([
     {
         path: "/settings",
         element: <Settings />,
+        errorElement: <Login />,
+        loader: fetchAdminLoader,
+    },
+    {
+        path: "/admin-limits",
+        element: <AdminLimits />,
+        errorElement: <Login />,
+        loader: fetchAdminLoader,
+    },
+    {
+        path: "/connection-logs",
+        element: <ConnectionLogs />,
         errorElement: <Login />,
         loader: fetchAdminLoader,
     },

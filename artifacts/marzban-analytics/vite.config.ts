@@ -31,7 +31,7 @@ function marzbanMockPlugin(): Plugin {
         };
 
         const MOCK_PATHS = ["/admin/token", "/admin", "/admins", "/system", "/users", "/inbounds", "/nodes", "/hosts", "/node"];
-        const isMockPath = MOCK_PATHS.some(p => url === p || url.startsWith(p + "?") || url.startsWith(p + "/"));
+        const isMockPath = MOCK_PATHS.some(p => url === p || url.startsWith(p + "?") || url.startsWith(p + "/")) || url === "/users/connections";
 
         if (!isMockPath) return next();
 
@@ -47,13 +47,29 @@ function marzbanMockPlugin(): Plugin {
         if (url === "/admin/token") {
           return json({ access_token: "demo_token_xprobego", token_type: "bearer" });
         }
-        if (url === "/admin") {
+        if (url === "/admin" && req.method === "GET") {
           return json({ username: "admin", is_sudo: true, telegram_id: null, discord_webhook: null });
+        }
+        if (url.startsWith("/admin/") && (req.method === "PUT" || req.method === "DELETE")) {
+          return json({ success: true });
         }
         if (url === "/admins") {
           return json([
-            { username: "admin", is_sudo: true, telegram_id: "@xprobego_admin", discord_webhook: null },
-            { username: "operator1", is_sudo: false, telegram_id: null, discord_webhook: null },
+            { username: "admin", is_sudo: true, telegram_id: "@xprobego_admin", discord_webhook: null, users_limit: null, data_limit_gb: null, expire_days_limit: null },
+            { username: "operator1", is_sudo: false, telegram_id: null, discord_webhook: null, users_limit: 50, data_limit_gb: 100, expire_days_limit: 90 },
+            { username: "reseller_tr", is_sudo: false, telegram_id: null, discord_webhook: null, users_limit: 20, data_limit_gb: 50, expire_days_limit: 30 },
+          ]);
+        }
+        if (url === "/users/connections") {
+          const now = new Date();
+          const ago = (minutes: number) => new Date(now.getTime() - minutes * 60000).toISOString();
+          return json([
+            { username: "ali_vip", ip: "78.169.45.123", country_code: "TR", country_name: "Turkey", city: "Istanbul", device: "iPhone 15 Pro", os: "iOS 17.2", last_seen: ago(2), node: "Germany-01", status: "online" },
+            { username: "mehmet_pro", ip: "89.244.77.210", country_code: "TR", country_name: "Turkey", city: "Ankara", device: "Samsung Galaxy S24", os: "Android 14", last_seen: ago(5), node: "Netherlands-01", status: "online" },
+            { username: "test_user", ip: "5.104.67.88", country_code: "IR", country_name: "Iran", city: "Tehran", device: "Xiaomi 13", os: "Android 13", last_seen: ago(45), node: "Germany-01", status: "offline" },
+            { username: "expired_demo", ip: "37.201.55.4", country_code: "DE", country_name: "Germany", city: "Berlin", device: "MacBook Pro", os: "macOS 14", last_seen: ago(120), node: "Finland-01", status: "offline" },
+            { username: "ayse_basic", ip: "176.88.12.99", country_code: "TR", country_name: "Turkey", city: "Izmir", device: "iPhone 14", os: "iOS 16.5", last_seen: ago(10), node: "Netherlands-01", status: "online" },
+            { username: "on_hold_user", ip: "94.55.33.200", country_code: "AE", country_name: "UAE", city: "Dubai", device: "Windows PC", os: "Windows 11", last_seen: ago(1440), node: "Germany-01", status: "offline" },
           ]);
         }
         if (url === "/system" || url.startsWith("/system?")) {
