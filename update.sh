@@ -20,7 +20,7 @@ cd "$APP_DIR"
 OLD_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
 
 info "GitHub'dan son sürüm çekiliyor..."
-git pull origin main 2>/dev/null || git pull origin master
+git pull origin main
 
 NEW_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
 
