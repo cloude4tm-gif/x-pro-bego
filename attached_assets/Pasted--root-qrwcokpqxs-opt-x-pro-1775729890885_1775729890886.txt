@@ -1,0 +1,31 @@
+────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@qrwcokpqxs:/opt/x-pro-bego# cd /opt/x-pro-bego && git pull origin main && pm2 restart xprobego-api
+remote: Enumerating objects: 46, done.
+remote: Counting objects: 100% (46/46), done.
+remote: Compressing objects: 100% (8/8), done.
+remote: Total 30 (delta 21), reused 30 (delta 21), pack-reused 0 (from 0)
+Unpacking objects: 100% (30/30), 1.83 MiB | 3.92 MiB/s, done.
+From https://github.com/cloude4tm-gif/x-pro-bego
+ * branch            main       -> FETCH_HEAD
+   aa4ff85..dab0eb3  main       -> origin/main
+Updating aa4ff85..dab0eb3
+Fast-forward
+ artifacts/api-server/src/app.ts                        |   5 +++--
+ artifacts/api-server/src/routes/marzbanProxy.ts        |  16 +++++++++++++---
+ .../assets/{index-B7n6apBq.js => index-B4qrurG_.js}    |   2 +-
+ artifacts/marzban-analytics/dist/public/index.html     |   2 +-
+ .../src/contexts/CoreSettingsContext.tsx               |  10 +++++++++-
+ .../Screenshot_20260409-131236_1775722417465.jpg       | Bin 0 -> 371966 bytes
+ .../Screenshot_20260409-132525_1775728878384.jpg       | Bin 0 -> 446090 bytes
+ .../Screenshot_20260409-150742_1775729282457.jpg       | Bin 0 -> 452907 bytes
+ 8 files changed, 27 insertions(+), 8 deletions(-)
+ rename artifacts/marzban-analytics/dist/public/assets/{index-B7n6apBq.js => index-B4qrurG_.js} (99%)
+ create mode 100644 attached_assets/Screenshot_20260409-131236_1775722417465.jpg create mode 100644 attached_assets/Screenshot_20260409-132525_1775728878384.jpg create mode 100644 attached_assets/Screenshot_20260409-150742_1775729282457.jpgUse --update-env to update environment variables
+[PM2] Applying action restartProcessId on app [xprobego-api](ids: [ 0 ])
+[PM2] [xprobego-api](0) ✓
+┌────┬────────────────────┬──────────┬──────┬───────────┬──────────┬──────────┐
+│ id │ name               │ mode     │ ↺    │ status    │ cpu      │ memory   │
+├────┼────────────────────┼──────────┼──────┼───────────┼──────────┼──────────┤
+│ 0  │ xprobego-api       │ cluster  │ 6    │ online    │ 0%       │ 37.8mb   │
+└────┴────────────────────┴──────────┴──────┴───────────┴──────────┴──────────┘
+root@qrwcokpqxs:/opt/x-pro-bego#
