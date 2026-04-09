@@ -56307,12 +56307,21 @@ async function handleProxy(req, res) {
   }
   const hasBody = ["POST", "PUT", "PATCH"].includes(req.method.toUpperCase());
   let bodyContent;
-  if (hasBody && req.body) {
+  if (hasBody) {
     const contentType = (req.headers["content-type"] || "").toLowerCase();
     if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart")) {
       bodyContent = new URLSearchParams(req.body).toString();
       forwardHeaders["Content-Type"] = "application/x-www-form-urlencoded";
-    } else {
+    } else if (typeof req.body === "string" && req.body.length > 0) {
+      try {
+        JSON.parse(req.body);
+        bodyContent = req.body;
+        forwardHeaders["Content-Type"] = "application/json";
+      } catch {
+        bodyContent = req.body;
+        forwardHeaders["Content-Type"] = "text/plain;charset=UTF-8";
+      }
+    } else if (req.body && typeof req.body === "object") {
       bodyContent = JSON.stringify(req.body);
       forwardHeaders["Content-Type"] = "application/json";
     }
@@ -56324,9 +56333,19 @@ async function handleProxy(req, res) {
       body: bodyContent
     });
     const contentType = response.headers.get("content-type") || "application/json";
+    const responseBody = await response.text();
+    if (!response.ok) {
+      req.log?.warn({
+        targetUrl,
+        method: req.method,
+        requestBodyPreview: bodyContent ? bodyContent.slice(0, 200) : "(empty)",
+        status: response.status,
+        marzbanResponse: responseBody.slice(0, 500)
+      }, "Marzban returned error");
+    }
     res.status(response.status);
     res.setHeader("Content-Type", contentType);
-    res.send(await response.text());
+    res.send(responseBody);
   } catch (err) {
     res.status(502).json({ error: `Marzban sunucusuna ula\u015F\u0131lamad\u0131: ${err.message}` });
   }
@@ -56389,8 +56408,9 @@ app.use(
   })
 );
 app.use((0, import_cors.default)());
-app.use(import_express13.default.json());
-app.use(import_express13.default.urlencoded({ extended: true }));
+app.use(import_express13.default.json({ limit: "10mb" }));
+app.use(import_express13.default.urlencoded({ extended: true, limit: "10mb" }));
+app.use(import_express13.default.text({ type: "text/plain", limit: "10mb" }));
 app.use("/api", routes_default);
 var app_default = app;
 
