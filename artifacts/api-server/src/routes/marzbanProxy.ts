@@ -21,15 +21,25 @@ async function handleProxy(req: Request, res: Response): Promise<void> {
   const hasBody = ["POST", "PUT", "PATCH"].includes(req.method.toUpperCase());
   let bodyContent: string | undefined;
 
-  if (hasBody && req.body) {
+  if (hasBody) {
     const contentType = (req.headers["content-type"] || "").toLowerCase();
 
     if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart")) {
       // OAuth2 form data — forward as URL-encoded (required by Marzban /api/admin/token)
       bodyContent = new URLSearchParams(req.body as Record<string, string>).toString();
       forwardHeaders["Content-Type"] = "application/x-www-form-urlencoded";
-    } else {
-      // JSON body
+    } else if (typeof req.body === "string" && req.body.length > 0) {
+      // express.text() parsed a plain-text body — check if it's actually JSON
+      try {
+        JSON.parse(req.body);
+        bodyContent = req.body;
+        forwardHeaders["Content-Type"] = "application/json";
+      } catch {
+        bodyContent = req.body;
+        forwardHeaders["Content-Type"] = "text/plain;charset=UTF-8";
+      }
+    } else if (req.body && typeof req.body === "object") {
+      // JSON body parsed by express.json()
       bodyContent = JSON.stringify(req.body);
       forwardHeaders["Content-Type"] = "application/json";
     }
