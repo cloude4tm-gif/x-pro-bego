@@ -1,6 +1,8 @@
 import { getAuthToken } from "utils/authStorage";
 
-const BASE = "/xpbapi";
+// Dev: Vite proxies /xpbapi → localhost:8080/api
+// Production: Replit routes /api → API server directly
+const BASE = import.meta.env.DEV ? "/xpbapi" : "/api";
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = getAuthToken();

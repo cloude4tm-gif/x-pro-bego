@@ -9,10 +9,12 @@ import webhooksRouter from "./webhooks";
 import botSettingsRouter from "./botSettings";
 import automationRouter from "./automation";
 import analyticsRouter from "./analytics";
+import marzbanProxyRouter from "./marzbanProxy";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(marzbanProxyRouter);
 router.use(plansRouter);
 router.use(resellersRouter);
 router.use(apiKeysRouter);

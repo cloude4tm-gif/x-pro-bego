@@ -15,6 +15,11 @@ export const $fetch = ohMyFetch.create({
   baseURL: import.meta.env.VITE_BASE_API,
 });
 
+// In production, Marzban API calls are proxied through our API server
+// to avoid CORS issues. In dev, mock middleware intercepts them anyway.
+const IS_DEV = import.meta.env.DEV;
+const PROXY_BASE = IS_DEV ? null : "/api/marzban-proxy";
+
 export const fetcher = <T = any>(
   url: string,
   ops: FetchOptions<"json"> = {}
@@ -30,6 +35,18 @@ export const fetcher = <T = any>(
       Authorization: `Bearer ${getAuthToken()}`,
     };
   }
+
+  if (PROXY_BASE) {
+    // Production: proxy through API server, pass Marzban URL as header
+    const cleanPath = url.startsWith("/") ? url.slice(1) : url;
+    ops["headers"] = {
+      ...(ops?.headers || {}),
+      "X-Marzban-Server": serverUrl,
+    };
+    return $fetch<T>(cleanPath, { ...ops, baseURL: PROXY_BASE });
+  }
+
+  // Dev: call Marzban server directly (intercepted by vite mock middleware)
   return $fetch<T>(url, { ...ops, baseURL: serverUrl });
 };
 
