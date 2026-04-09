@@ -323,19 +323,31 @@ export const UserDialog: FC<UserDialogProps> = () => {
         onClose();
       })
       .catch((err) => {
-        if (err?.response?.status === 409 || err?.response?.status === 400)
-          setError(err?.response?._data?.detail);
-        if (err?.response?.status === 422) {
-          Object.keys(err.response._data.detail).forEach((key) => {
-            setError(err?.response._data.detail[key] as string);
-            form.setError(
-              key as "proxies" | "username" | "data_limit" | "expire",
-              {
-                type: "custom",
-                message: err.response._data.detail[key],
-              }
-            );
-          });
+        const status = err?.response?.status;
+        const detail = err?.response?._data?.detail;
+        if (status === 409 || status === 400) {
+          setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+        } else if (status === 422) {
+          if (Array.isArray(detail)) {
+            setError(detail.map((d: any) => d?.msg || JSON.stringify(d)).join(", "));
+          } else if (typeof detail === "object" && detail !== null) {
+            Object.keys(detail).forEach((key) => {
+              setError(detail[key] as string);
+              form.setError(
+                key as "proxies" | "username" | "data_limit" | "expire",
+                { type: "custom", message: detail[key] }
+              );
+            });
+          } else {
+            setError(String(detail));
+          }
+        } else if (status === 404) {
+          setError("Marzban API endpoint bulunamadı. Marzban sunucu adresi doğru mu?");
+        } else if (status === 401 || status === 403) {
+          setError("Yetki hatası. Lütfen tekrar giriş yapın.");
+        } else {
+          const msg = detail || err?.message || "Bilinmeyen hata";
+          setError(`Hata (${status || "ağ"}): ${typeof msg === "string" ? msg : JSON.stringify(msg)}`);
         }
       })
       .finally(() => {

@@ -40,8 +40,8 @@ DB_USER="xprobego"
 DB_PASS=$(openssl rand -hex 16)
 SESSION_SECRET=$(openssl rand -hex 32)
 
-# ─── GitHub repo adresi (değiştirin!) ───────────────────────
-GITHUB_REPO="${GITHUB_REPO:-https://github.com/YOUR_USERNAME/x-pro-bego.git}"
+# ─── GitHub repo adresi ─────────────────────────────────────
+GITHUB_REPO="${GITHUB_REPO:-https://github.com/cloude4tm-gif/x-pro-bego.git}"
 
 echo ""
 warn "GitHub repo adresi: ${GITHUB_REPO}"
@@ -308,19 +308,46 @@ cat > "$APP_DIR/update.sh" << 'UPDATE'
 #!/bin/bash
 set -e
 APP_DIR="/opt/x-pro-bego"
-echo "🔄 X-Pro Bego güncelleniyor..."
+echo "[*] X-Pro Bego güncelleniyor..."
 
 cd "$APP_DIR"
+
+# Mevcut commit hash'ini kaydet
+OLD_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
+
 git pull origin main 2>/dev/null || git pull origin master
 
+NEW_HASH=$(git rev-parse HEAD 2>/dev/null || echo "")
+
 export $(cat .env | grep -v '^#' | xargs)
-pnpm install --frozen-lockfile
+
+pnpm install --frozen-lockfile --silent
 pnpm --filter @workspace/db push
-pnpm --filter @workspace/marzban-analytics run build
+
+# Frontend: git'te dist değiştiyse veya dist yoksa build et
+DIST_CHANGED=false
+if [ -n "$OLD_HASH" ] && [ "$OLD_HASH" != "$NEW_HASH" ]; then
+  if git diff --name-only "$OLD_HASH" "$NEW_HASH" | grep -q "artifacts/marzban-analytics/dist/"; then
+    DIST_CHANGED=true
+    echo "[*] Frontend dist güncellendi (git'ten alındı)"
+  fi
+fi
+
+if [ ! -d "$APP_DIR/artifacts/marzban-analytics/dist/public" ]; then
+  echo "[*] Frontend derleniyor..."
+  pnpm --filter @workspace/marzban-analytics run build
+elif [ "$DIST_CHANGED" = "false" ] && git diff --name-only "$OLD_HASH" "$NEW_HASH" | grep -q "artifacts/marzban-analytics/src/"; then
+  echo "[*] Frontend kaynak kodu değişti, derleniyor..."
+  pnpm --filter @workspace/marzban-analytics run build
+else
+  echo "[✓] Frontend değişmedi, derleme atlanıyor"
+fi
+
+# API server her zaman derlenir (hızlı)
 cd artifacts/api-server && pnpm run build && cd "$APP_DIR"
 
 pm2 restart xprobego-api
-echo "✅ Güncelleme tamamlandı!"
+echo "[✓] Güncelleme tamamlandı!"
 UPDATE
 chmod +x "$APP_DIR/update.sh"
 
