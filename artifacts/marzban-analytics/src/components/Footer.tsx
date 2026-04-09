@@ -12,7 +12,7 @@ export const Footer: FC<BoxProps> = (props) => {
         color="gray.500"
         fontSize="xs"
       >
-        {APP_NAME} — Powered by Marzban
+        {APP_NAME} — Bağımsız VPN Panel
       </Text>
     </HStack>
   );

@@ -15,41 +15,32 @@ export const $fetch = ohMyFetch.create({
   baseURL: import.meta.env.VITE_BASE_API,
 });
 
-// In production, Marzban API calls are proxied through our API server
-// to avoid CORS issues. In dev, mock middleware intercepts them anyway.
 const IS_DEV = import.meta.env.DEV;
-const PROXY_BASE = IS_DEV ? null : "/api/marzban-proxy";
 
 export const fetcher = <T = any>(
   url: string,
   ops: FetchOptions<"json"> = {}
 ) => {
-  const serverUrl = getServerUrl();
-  if (!serverUrl) {
-    return Promise.reject(new Error("No server URL configured"));
-  }
   const token = getAuthToken();
   if (token) {
     ops["headers"] = {
       ...(ops?.headers || {}),
-      Authorization: `Bearer ${getAuthToken()}`,
+      Authorization: `Bearer ${token}`,
     };
   }
 
-  // Marzban v0.4+ uses /api/ prefix for all endpoints
+  if (!IS_DEV) {
+    // Production: call our own API at /api directly (no Marzban proxy needed)
+    const cleanPath = url.startsWith("/") ? url.slice(1) : url;
+    return $fetch<T>(cleanPath, { ...ops, baseURL: "/api" });
+  }
+
+  // Dev: call API server directly using stored serverUrl
+  const serverUrl = getServerUrl();
+  if (!serverUrl) {
+    return Promise.reject(new Error("No server URL configured"));
+  }
   const apiUrl = url.startsWith("/api/") ? url : `/api${url.startsWith("/") ? url : `/${url}`}`;
-
-  if (PROXY_BASE) {
-    // Production: proxy through API server, pass Marzban URL as header
-    const cleanPath = apiUrl.startsWith("/") ? apiUrl.slice(1) : apiUrl;
-    ops["headers"] = {
-      ...(ops?.headers || {}),
-      "X-Marzban-Server": serverUrl,
-    };
-    return $fetch<T>(cleanPath, { ...ops, baseURL: PROXY_BASE });
-  }
-
-  // Dev: call Marzban server directly (intercepted by vite mock middleware)
   return $fetch<T>(apiUrl, { ...ops, baseURL: serverUrl });
 };
 

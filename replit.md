@@ -15,74 +15,93 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **Build**: esbuild (CJS bundle)
 
+## Architecture — Marzban'dan BAĞIMSIZ
+
+Panel artık tamamen bağımsız çalışır. Marzban gerektirmez.
+
+**Akış (Üretimde):**
+```
+Browser → Nginx port 80 → Express port 8080 → PostgreSQL
+                                            ↓
+                                       Xray (pm2: xprobego-xray)
+```
+
+**Frontend → API:**
+- Dev mod: `marzbanMockPlugin()` sahte veri sunar, `/api` Vite proxy → Express
+- Üretim: Tüm çağrılar `/api/` üzerinden Express'e (IS_DEV=false → PROXY_BASE="/api")
+
 ## Artifacts
 
-### X-Pro Bego — Marzban Panel (`artifacts/marzban-analytics`)
+### X-Pro Bego Panel (`artifacts/marzban-analytics`)
 - **Type**: react-vite, hosted at `/`
-- **Purpose**: Full Marzban VPN management panel rebranded as "X-Pro Bego"
-- **Features** (all original Marzban features preserved + enterprise suite):
-  - Login page with configurable Server URL field (stores in localStorage via `xprobego_server_url` key)
-  - Full user management (create/edit/delete/search/paginate)
-  - Node settings and usage, Host settings, Core (Xray) settings, System stats
-  - Multi-language support (en/fa/ru/zh)
-  - Dark mode (default), light theme toggle
-  - Admin Manager in Settings (`/settings`)
-  - **Enterprise Pages** (all connected to real PostgreSQL via API server):
-    - `/analytics` — Traffic analytics with ApexCharts (line/bar), traffic snapshots, CSV export
-    - `/subscription-plans` — Full CRUD plan management (Bronze/Silver/Gold/Platinum)
-    - `/resellers` — 4-tier hierarchy (master/distributor/reseller/sub_reseller), balance management
-    - `/api-keys` — API key creation (one-time reveal), revoke, delete, permission scopes
-    - `/ip-manager` — Whitelist/Blacklist tabs with IP/CIDR add/remove
-    - `/audit-log` — Full audit log with search, filter by admin/action, CSV export, pagination
-    - `/webhooks` — CRUD webhooks (11 event types), real HTTP test trigger
-    - `/backups` — Manual + scheduled backup UI
-    - `/telegram-bot` — Bot token config, per-event notification templates, real Telegram test send
-    - `/automation` — Auto-renew, auto-deactivate, expiry reminders, suspicious traffic detection
-- **Branding**: Title "X-Pro Bego", custom 3D cube SVG logo, Footer "X-Pro Bego — Powered by Marzban"
-- **Mock middleware**: `vite.config.ts` → `marzbanMockPlugin()` intercepts Marzban API calls in dev
-- **Proxy**: `/xpbapi` → `http://localhost:8080/api` (API server enterprise features)
+- **Purpose**: Bağımsız VPN yönetim paneli (Marzban frontend'ini kaynak aldı)
+- **Features**:
+  - Login, kullanıcı yönetimi (create/edit/delete), sistem istatistikleri
+  - Core (Xray) ayarları, inbound yönetimi, subscription link üretimi
+  - Multi-language (en/fa/ru/zh), dark mode, admin yönetimi
+  - **Enterprise**: analytics, subscription-plans, resellers, api-keys, ip-manager, audit-log, webhooks, telegram-bot, automation
 - **Key files**:
-  - `src/service/xpbApi.ts` — Enterprise API client (all 9 feature areas)
-  - `src/pages/Router.tsx` — routing with `protectedRoute()` helper
-  - `src/pages/Login.tsx` — branded login with server URL field
-  - `src/service/http.ts` — runtime-configurable Marzban API base URL
+  - `src/service/http.ts` — Prod'da /api, dev'de mockPlugin veya serverUrl
+  - `src/pages/Login.tsx` — Giriş sayfası (server URL alanı dev'de kullanılır)
+  - `vite.config.ts` — marzbanMockPlugin + /api proxy
 
 ### API Server (`artifacts/api-server`)
-- **Type**: Express 5 API, hosted at port 8080
-- **Routes prefix**: `/api/`
-- **Authentication**: `Authorization: Bearer <token>` required on all routes
-- **Enterprise endpoints**:
-  - `GET/POST/PUT/DELETE /api/plans` — Subscription plan CRUD
-  - `GET/POST/PUT/DELETE /api/resellers` + `POST /api/resellers/:id/balance`
-  - `GET/POST /api/api-keys` + `PATCH /api/api-keys/:id/revoke` + `DELETE /api/api-keys/:id`
-  - `GET/POST/DELETE /api/ip-rules` (with `?type=whitelist|blacklist`)
-  - `GET/POST /api/audit-logs` (with filter params: admin, action, search, limit, offset)
-  - `GET/POST/PUT/DELETE /api/webhooks` + `POST /api/webhooks/:id/test` (real HTTP call)
-  - `GET/PUT /api/bot-settings` + `POST /api/bot-settings/test` (real Telegram API call)
-  - `GET/PUT /api/automation`
-  - `GET /api/analytics/snapshots` + `POST /api/analytics/snapshot`
+- **Type**: Express 5 API, port 8080
+- **Marzban-uyumlu endpoint'ler** (frontend hiç değişmeden çalışır):
+  - `POST /api/admin/token` — JWT ile giriş (ilk admin otomatik oluşur)
+  - `GET/POST/PUT/DELETE /api/admin/:username` — Admin yönetimi
+  - `GET /api/admins` — Admin listesi
+  - `GET/POST/PUT/DELETE /api/user/:username` — VPN kullanıcı CRUD
+  - `GET /api/users` — Kullanıcı listesi
+  - `GET /api/user/:username/subscription` — Subscription link (base64)
+  - `GET /api/sub/:token` — Subscription by token
+  - `GET/PUT /api/core/config` — Xray config (DB'den)
+  - `POST /api/core/restart` — Xray yeniden başlat
+  - `GET /api/core` — Xray version/status
+  - `GET /api/system` — CPU/RAM/kullanıcı istatistikleri
+  - `GET /api/inbounds` — Xray inbound listesi
+- **Enterprise endpoint'ler**: /api/plans, /api/resellers, /api/api-keys, /api/ip-rules, /api/audit-logs, /api/webhooks, /api/bot-settings, /api/automation
 - **Key files**:
-  - `src/routes/index.ts` — all route aggregation
-  - `src/middlewares/auth.ts` — Bearer token auth check
+  - `src/routes/xpro/` — Tüm bağımsız VPN endpoint'leri
+  - `src/lib/xray.ts` — Xray config yönetimi (DB + dosya), restart
+  - `src/lib/subscription.ts` — VLESS/VMess/Trojan/Shadowsocks link üretimi
+  - `src/lib/auth.ts` — JWT imzalama/doğrulama, bcrypt
+  - `src/app.ts` — Startup'ta Xray config dosyasını DB'ye yükler
 
 ## Database (`lib/db`)
-- **Tables** (all created via `pnpm --filter @workspace/db push`):
-  - `subscription_plans` — Plan tiers with pricing and limits
-  - `resellers` — 4-tier reseller hierarchy with balance
-  - `api_keys` — Hashed API keys with permission scopes
-  - `ip_rules` — Whitelist/blacklist IP rules
-  - `audit_logs` — Admin action audit trail
-  - `webhooks` — Webhook endpoints with event subscriptions
-  - `bot_settings` — Telegram bot configuration and templates
-  - `automation_settings` — Auto-renew/deactivate/reminder rules
-  - `traffic_snapshots` — Analytics time-series data
-- **Push command**: `pnpm --filter @workspace/db push`
+- **Tabloları oluştur**: `pnpm --filter @workspace/db push`
 - **Schema**: `lib/db/src/schema/index.ts`
+- **Tablolar**:
+  - `vpn_users` — VPN kullanıcıları (UUID, trafik, expire, inbounds)
+  - `xpro_admins` — Panel yöneticileri (bcrypt şifre, JWT)
+  - `xray_config` — Xray JSON konfigürasyonu (DB'de saklı)
+  - `subscription_plans`, `resellers`, `api_keys`, `ip_rules`, `audit_logs`, `webhooks`, `bot_settings`, `automation_settings`, `traffic_snapshots`
+
+## Kurulum (VPS)
+
+```bash
+bash install.sh
+```
+
+Kurulum yapılanlar:
+1. Standalone Xray kurulur (Marzban yok)
+2. x25519 key pair üretilir (VLESS+Reality için)
+3. PostgreSQL + tüm tablolar kurulur
+4. API server + Xray → PM2 ile başlatılır
+5. Nginx → Frontend static + /api/ proxy
+6. İlk giriş: `admin` + kendi şifren (otomatik kaydedilir)
+
+## Subscription Link Üretimi
+
+- **VLESS+Reality**: `vless://UUID@IP:443?security=reality&sni=dl.google.com&pbk=PUBLIC_KEY&sid=...`
+- **Shadowsocks**: `ss://base64url(method:UUID)@IP:1080#username`
+- **VMess**: `vmess://base64(json)`
+- **Trojan**: `trojan://UUID@IP:port?...`
+
+`SERVER_IP` env var ile hangi IP kullanılacağı belirlenir.
 
 ## Key Commands
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/db push` — sync schema to PostgreSQL
-
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+- `pnpm --filter @workspace/db push` — DB şemasını PostgreSQL'e uygula
+- `pnpm --filter @workspace/api-server run build` — API server derle
+- `pnpm --filter @workspace/marzban-analytics run build` — Frontend derle
