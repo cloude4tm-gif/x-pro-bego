@@ -1,10 +1,12 @@
 import {
   Box,
+  Divider,
   chakra,
   HStack,
   IconButton,
   Menu,
   MenuButton,
+  MenuGroup,
   MenuItem,
   MenuList,
   Text,
@@ -14,15 +16,22 @@ import {
 import {
   ArrowLeftOnRectangleIcon,
   Bars3Icon,
+  BellAlertIcon,
+  BoltIcon,
+  ChartBarSquareIcon,
   ChartPieIcon,
+  CircleStackIcon,
   Cog6ToothIcon,
   DocumentMinusIcon,
   GlobeAltIcon,
+  KeyIcon,
   LinkIcon,
   LockClosedIcon,
   MoonIcon,
+  NoSymbolIcon,
   SquaresPlusIcon,
   SunIcon,
+  UserGroupIcon,
   WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import { useDashboard } from "contexts/DashboardContext";
@@ -38,10 +47,7 @@ type HeaderProps = {
   actions?: ReactNode;
 };
 const iconProps = {
-  baseStyle: {
-    w: 4,
-    h: 4,
-  },
+  baseStyle: { w: 4, h: 4 },
 };
 
 const DarkIcon = chakra(MoonIcon, iconProps);
@@ -56,6 +62,16 @@ const ResetUsageIcon = chakra(DocumentMinusIcon, iconProps);
 const AdminSettingsIcon = chakra(WrenchScrewdriverIcon, iconProps);
 const AdminLimitsIcon = chakra(LockClosedIcon, iconProps);
 const ConnectionIcon = chakra(GlobeAltIcon, iconProps);
+const AnalyticsIcon = chakra(ChartBarSquareIcon, iconProps);
+const PlansIcon = chakra(CircleStackIcon, iconProps);
+const ResellerIcon = chakra(UserGroupIcon, iconProps);
+const ApiKeyIcon = chakra(KeyIcon, iconProps);
+const IpIcon = chakra(NoSymbolIcon, iconProps);
+const AuditIcon = chakra(DocumentMinusIcon, iconProps);
+const WebhookIcon = chakra(LinkIcon, iconProps);
+const BackupIcon = chakra(CircleStackIcon, iconProps);
+const TelegramIcon = chakra(BellAlertIcon, iconProps);
+const AutomationIcon = chakra(BoltIcon, iconProps);
 
 export const Header: FC<HeaderProps> = ({ actions }) => {
   const { userData, getUserIsSuccess, getUserIsPending } = useGetUser();
@@ -80,36 +96,24 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
     <HStack
       gap={2}
       justifyContent="space-between"
-      __css={{
-        "& .menuList": {
-          direction: "ltr",
-        },
-      }}
+      __css={{ "& .menuList": { direction: "ltr" } }}
       position="relative"
     >
-      <HStack spacing={3} alignItems="center">
-        <Box w="40px" h="40px">
-          <XProLogo />
-        </Box>
-        <VStack spacing={0} alignItems="flex-start">
-          <Text
-            fontWeight="bold"
-            fontSize="lg"
-            lineHeight="1.1"
-            _dark={{ color: "white" }}
-          >
-            X-Pro
-          </Text>
-          <Text
-            fontWeight="bold"
-            fontSize="sm"
-            lineHeight="1.1"
-            color="primary.400"
-          >
-            Bego Panel
-          </Text>
-        </VStack>
-      </HStack>
+      <Link to="/">
+        <HStack spacing={3} alignItems="center" cursor="pointer">
+          <Box w="40px" h="40px">
+            <XProLogo />
+          </Box>
+          <VStack spacing={0} alignItems="flex-start">
+            <Text fontWeight="bold" fontSize="lg" lineHeight="1.1" _dark={{ color: "white" }}>
+              X-Pro
+            </Text>
+            <Text fontWeight="bold" fontSize="sm" lineHeight="1.1" color="primary.400">
+              Bego Panel
+            </Text>
+          </VStack>
+        </HStack>
+      </Link>
 
       <Box overflow="auto" css={{ direction: "rtl" }}>
         <HStack alignItems="center">
@@ -121,60 +125,105 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
               icon={<SettingsIcon />}
               position="relative"
             />
-            <MenuList minW="190px" zIndex={99999} className="menuList">
+            <MenuList minW="220px" zIndex={99999} className="menuList" maxH="80vh" overflowY="auto">
               {isSudo() && (
                 <>
-                  <MenuItem
-                    maxW="190px"
-                    fontSize="sm"
-                    icon={<HostsIcon />}
-                    onClick={onEditingHosts.bind(null, true)}
-                  >
-                    {t("header.hostSettings")}
-                  </MenuItem>
-                  <MenuItem
-                    maxW="190px"
-                    fontSize="sm"
-                    icon={<NodesIcon />}
-                    onClick={onEditingNodes.bind(null, true)}
-                  >
-                    {t("header.nodeSettings")}
-                  </MenuItem>
-                  <MenuItem
-                    maxW="190px"
-                    fontSize="sm"
-                    icon={<NodesUsageIcon />}
-                    onClick={onShowingNodesUsage.bind(null, true)}
-                  >
-                    {t("header.nodesUsage")}
-                  </MenuItem>
-                  <MenuItem
-                    maxW="190px"
-                    fontSize="sm"
-                    icon={<ResetUsageIcon />}
-                    onClick={onResetAllUsage.bind(null, true)}
-                  >
-                    {t("resetAllUsage")}
-                  </MenuItem>
-                  <Link to="/admin-limits">
-                    <MenuItem maxW="190px" fontSize="sm" icon={<AdminLimitsIcon />}>
-                      Admin Limits
+                  <MenuGroup title="Marzban" color="gray.500">
+                    <MenuItem maxW="220px" fontSize="sm" icon={<HostsIcon />} onClick={onEditingHosts.bind(null, true)}>
+                      {t("header.hostSettings")}
                     </MenuItem>
-                  </Link>
-                  <Link to="/settings">
-                    <MenuItem maxW="190px" fontSize="sm" icon={<AdminSettingsIcon />}>
-                      Admin Manager
+                    <MenuItem maxW="220px" fontSize="sm" icon={<NodesIcon />} onClick={onEditingNodes.bind(null, true)}>
+                      {t("header.nodeSettings")}
                     </MenuItem>
-                  </Link>
-                  <Link to="/connection-logs">
-                    <MenuItem maxW="190px" fontSize="sm" icon={<ConnectionIcon />}>
-                      Connection Logs
+                    <MenuItem maxW="220px" fontSize="sm" icon={<NodesUsageIcon />} onClick={onShowingNodesUsage.bind(null, true)}>
+                      {t("header.nodesUsage")}
                     </MenuItem>
-                  </Link>
+                    <MenuItem maxW="220px" fontSize="sm" icon={<ResetUsageIcon />} onClick={onResetAllUsage.bind(null, true)}>
+                      {t("resetAllUsage")}
+                    </MenuItem>
+                  </MenuGroup>
+                  <Divider borderColor="gray.700" />
+                  <MenuGroup title="Analitik" color="gray.500">
+                    <Link to="/analytics">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<AnalyticsIcon />}>
+                        📊 Analitik & Raporlar
+                      </MenuItem>
+                    </Link>
+                  </MenuGroup>
+                  <Divider borderColor="gray.700" />
+                  <MenuGroup title="Yönetim" color="gray.500">
+                    <Link to="/admin-limits">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<AdminLimitsIcon />}>
+                        Admin Limitleri
+                      </MenuItem>
+                    </Link>
+                    <Link to="/settings">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<AdminSettingsIcon />}>
+                        Admin Yöneticisi
+                      </MenuItem>
+                    </Link>
+                    <Link to="/reseller-manager">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<ResellerIcon />}>
+                        Reseller Yönetimi
+                      </MenuItem>
+                    </Link>
+                    <Link to="/subscription-plans">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<PlansIcon />}>
+                        Abonelik Planları
+                      </MenuItem>
+                    </Link>
+                  </MenuGroup>
+                  <Divider borderColor="gray.700" />
+                  <MenuGroup title="Güvenlik" color="gray.500">
+                    <Link to="/connection-logs">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<ConnectionIcon />}>
+                        Bağlantı Logları
+                      </MenuItem>
+                    </Link>
+                    <Link to="/audit-log">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<AuditIcon />}>
+                        Denetim Logu
+                      </MenuItem>
+                    </Link>
+                    <Link to="/ip-manager">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<IpIcon />}>
+                        IP Yöneticisi
+                      </MenuItem>
+                    </Link>
+                    <Link to="/api-keys">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<ApiKeyIcon />}>
+                        API Key Yönetimi
+                      </MenuItem>
+                    </Link>
+                  </MenuGroup>
+                  <Divider borderColor="gray.700" />
+                  <MenuGroup title="Otomasyon" color="gray.500">
+                    <Link to="/telegram-bot">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<TelegramIcon />}>
+                        🤖 Telegram Bot
+                      </MenuItem>
+                    </Link>
+                    <Link to="/automation">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<AutomationIcon />}>
+                        ⚡ Otomasyon
+                      </MenuItem>
+                    </Link>
+                    <Link to="/webhooks">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<WebhookIcon />}>
+                        Webhook Yönetimi
+                      </MenuItem>
+                    </Link>
+                    <Link to="/backup">
+                      <MenuItem maxW="220px" fontSize="sm" icon={<BackupIcon />}>
+                        💾 Yedekleme
+                      </MenuItem>
+                    </Link>
+                  </MenuGroup>
+                  <Divider borderColor="gray.700" />
                 </>
               )}
               <MenuItem
-                maxW="190px"
+                maxW="220px"
                 fontSize="sm"
                 icon={<span>💎</span>}
                 as="a"
@@ -184,7 +233,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
                 Happ Crypto
               </MenuItem>
               <MenuItem
-                maxW="190px"
+                maxW="220px"
                 fontSize="sm"
                 icon={<span>🎁</span>}
                 as="a"
@@ -194,7 +243,7 @@ export const Header: FC<HeaderProps> = ({ actions }) => {
                 Donation
               </MenuItem>
               <Link to="/login">
-                <MenuItem maxW="190px" fontSize="sm" icon={<LogoutIcon />}>
+                <MenuItem maxW="220px" fontSize="sm" icon={<LogoutIcon />}>
                   {t("header.logout")}
                 </MenuItem>
               </Link>

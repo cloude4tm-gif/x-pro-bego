@@ -1,0 +1,46 @@
+Kurumsal Seviye Özellik Önerileri
+💰 Gelir & Faturalandırma
+Özellik	Açıklama
+Abonelik Planları	Bronze / Silver / Gold paketler — limit, fiyat, süre otomatik atanır
+Otomatik Fatura	Kullanıcıya PDF fatura oluştur, mail/Telegram gönder
+Kripto Ödeme Kapısı	USDT/TRX/BTC ile otomatik ödeme → kullanıcı anında aktif olur
+Reseller Bakiye Sistemi	Her reseller'ın para bakiyesi olsun, kullanıcı oluştururken düşsün
+🏗️ Multi-Tenant Reseller Sistemi
+Özellik	Açıklama
+Reseller Alt Panel	Her reseller kendi ayrı giriş paneline sahip olsun
+White Label	Her reseller için özel logo, isim, domain
+Reseller Komisyon Takibi	Kaç kullanıcı oluşturdu, ne kadar kazandı
+Hiyerarşik Admin	Sudo → Admin → Reseller → Sub-Reseller 4 katman
+🔒 Güvenlik & İzleme
+Özellik	Açıklama
+2FA / TOTP	Admin girişine Google Authenticator desteği
+Admin Denetim Logu	Kim ne zaman ne yaptı — tam audit trail
+IP Whitelist	Admin paneline sadece belirli IP'lerden giriş
+Şüpheli Kullanım Tespiti	Anormal trafik (bot, torrent, abuse) otomatik uyarı
+IP Kara Liste	Belirli IP aralıklarını tüm sisteme otomatik engelle
+📊 Analitik & Raporlama
+Özellik	Açıklama
+Gelişmiş Grafikler	Günlük/haftalık/aylık trafik çizgi grafikleri (Recharts)
+Kullanıcı Büyüme Raporu	Aylık kaç kullanıcı eklendi, kaçı çıktı
+Node Performans Karşılaştırması	Hangi node en çok yük alıyor
+Bant Genişliği Tahmini	Kullanım hızına göre "ne zaman biter" tahmini
+CSV / Excel Dışa Aktar	Tüm kullanıcıları tek tıkla excel olarak indir
+🤖 Otomasyon
+Özellik	Açıklama
+Telegram Bot Entegrasyonu	Kullanıcılar bot üzerinden kendi bilgilerini sorgulasın
+Akıllı Hatırlatma	3 gün kala → Telegram/Discord otomatik mesaj gönder
+Otomatik Uzatma	Ödeme yapanlara süre otomatik uzatılsın
+Otomatik Deaktif	Süresi dolunca otomatik durdur + kullanıcıya bildir
+Webhook Sistemi	Herhangi bir olayda (kullanıcı doldu, node düştü) dış servise bildirim
+🌍 Kullanıcı Deneyimi
+Özellik	Açıklama
+Kullanıcı Self-Servis Portalı	Kullanıcılar kendi aboneliklerini web'den takip etsin
+Çoklu Dil Desteği (Genişletilmiş)	Türkçe, Arapça, Çince tam çeviri
+Mobil Uygulama	iOS/Android X-Pro Bego yönetim uygulaması
+Dünya Haritası	Bağlantı noktalarını interaktif dünya haritasında göster
+⚙️ Altyapı
+Özellik	Açıklama
+Node Load Balancing	Kullanıcıları en az yüklü node'a otomatik dağıt
+Disk & Uptime İzleme	Disk doluluk uyarısı, node uptime SLA takibi
+API Key Yönetimi	Harici sistemler için REST API anahtarı oluştur
+Yedekleme Sistemi	Tüm kullanıcı verilerini otomatik yedekle/geri yükle

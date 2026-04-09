@@ -6,6 +6,16 @@ import { Login } from "./Login";
 import { Settings } from "./Settings";
 import { AdminLimits } from "./AdminLimits";
 import { ConnectionLogs } from "./ConnectionLogs";
+import { AnalyticsDashboard } from "./AnalyticsDashboard";
+import { SubscriptionPlans } from "./SubscriptionPlans";
+import { ResellerManager } from "./ResellerManager";
+import { ApiKeyManager } from "./ApiKeyManager";
+import { IpManager } from "./IpManager";
+import { AuditLog } from "./AuditLog";
+import { WebhookManager } from "./WebhookManager";
+import { BackupManager } from "./BackupManager";
+import { TelegramBot } from "./TelegramBot";
+import { AutomationSettings } from "./AutomationSettings";
 
 const fetchAdminLoader = () => {
     const token = getAuthToken();
@@ -22,37 +32,27 @@ const fetchAdminLoader = () => {
     });
 };
 
+const protectedRoute = (element: JSX.Element) => ({
+    element,
+    errorElement: <Login />,
+    loader: fetchAdminLoader,
+});
+
 export const router = createHashRouter([
-    {
-        path: "/",
-        element: <Dashboard />,
-        errorElement: <Login />,
-        loader: fetchAdminLoader,
-    },
-    {
-        path: "/login",
-        element: <Login />,
-    },
-    {
-        path: "/login/",
-        element: <Login />,
-    },
-    {
-        path: "/settings",
-        element: <Settings />,
-        errorElement: <Login />,
-        loader: fetchAdminLoader,
-    },
-    {
-        path: "/admin-limits",
-        element: <AdminLimits />,
-        errorElement: <Login />,
-        loader: fetchAdminLoader,
-    },
-    {
-        path: "/connection-logs",
-        element: <ConnectionLogs />,
-        errorElement: <Login />,
-        loader: fetchAdminLoader,
-    },
+    { path: "/", ...protectedRoute(<Dashboard />) },
+    { path: "/login", element: <Login /> },
+    { path: "/login/", element: <Login /> },
+    { path: "/settings", ...protectedRoute(<Settings />) },
+    { path: "/admin-limits", ...protectedRoute(<AdminLimits />) },
+    { path: "/connection-logs", ...protectedRoute(<ConnectionLogs />) },
+    { path: "/analytics", ...protectedRoute(<AnalyticsDashboard />) },
+    { path: "/subscription-plans", ...protectedRoute(<SubscriptionPlans />) },
+    { path: "/reseller-manager", ...protectedRoute(<ResellerManager />) },
+    { path: "/api-keys", ...protectedRoute(<ApiKeyManager />) },
+    { path: "/ip-manager", ...protectedRoute(<IpManager />) },
+    { path: "/audit-log", ...protectedRoute(<AuditLog />) },
+    { path: "/webhooks", ...protectedRoute(<WebhookManager />) },
+    { path: "/backup", ...protectedRoute(<BackupManager />) },
+    { path: "/telegram-bot", ...protectedRoute(<TelegramBot />) },
+    { path: "/automation", ...protectedRoute(<AutomationSettings />) },
 ]);
