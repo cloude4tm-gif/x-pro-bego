@@ -31,7 +31,15 @@ export const useCoreSettings = create<CoreSettingsStore>((set) => ({
   },
   updateConfig: (body) => {
     set({ isPostLoading: true });
-    return fetch("/core/config", { method: "PUT", body }).finally(() => {
+    // JsonEditor returns a JSON string via onChangeText — parse to object so
+    // ofetch serialises it correctly as application/json
+    let configObj: any;
+    try {
+      configObj = typeof body === "string" ? JSON.parse(body) : body;
+    } catch {
+      configObj = body;
+    }
+    return fetch("/core/config", { method: "PUT", body: configObj }).finally(() => {
       set({ isPostLoading: false });
     });
   },
