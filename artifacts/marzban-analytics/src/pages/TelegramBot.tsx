@@ -11,6 +11,7 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  Spinner,
   Switch,
   Table,
   Tbody,
@@ -23,37 +24,36 @@ import {
   VStack,
   useToast,
 } from "@chakra-ui/react";
-import {
-  CheckCircleIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  PaperAirplaneIcon,
-} from "@heroicons/react/24/outline";
+import { EyeIcon, EyeSlashIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { chakra } from "@chakra-ui/react";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { Header } from "components/Header";
+import { xpbApi } from "service/xpbApi";
 
 const ShowIcon = chakra(EyeIcon, { baseStyle: { w: 4, h: 4 } });
 const HideIcon = chakra(EyeSlashIcon, { baseStyle: { w: 4, h: 4 } });
 const SendIcon = chakra(PaperAirplaneIcon, { baseStyle: { w: 4, h: 4 } });
 
-interface NotifEvent {
-  key: string;
-  label: string;
-  description: string;
-  enabled: boolean;
-  template: string;
-}
+const DEFAULT_TEMPLATES: Record<string, string> = {
+  user_expired: "⏰ *{username}* kullanıcısının süresi doldu.",
+  data_limit: "📊 *{username}* data limitine ulaştı ({used}/{limit}).",
+  node_down: "🔴 Node *{node_name}* çevrimdışı oldu!",
+  node_up: "🟢 Node *{node_name}* yeniden çevrimiçi.",
+  user_created: "👤 Yeni kullanıcı: *{username}* ({plan} planı)",
+  high_cpu: "🔥 Yüksek CPU kullanımı: *{cpu_usage}%*",
+  expiry_warning: "⚠️ *{username}* hesabı {days} gün içinde dolacak.",
+  admin_login: "🔑 Admin *{admin}* giriş yaptı. IP: {ip}",
+};
 
-const defaultEvents: NotifEvent[] = [
-  { key: "user_expired", label: "Kullanıcı Süresi Doldu", description: "Bir kullanıcının aboneliği sona erdiğinde", enabled: true, template: "⏰ *{username}* kullanıcısının süresi doldu." },
-  { key: "data_limit", label: "Data Limiti Doldu", description: "Kullanıcı data limitine ulaştığında", enabled: true, template: "📊 *{username}* data limitine ulaştı ({used}/{limit})." },
-  { key: "node_down", label: "Node Çevrimdışı", description: "Bir node bağlantısı kesildiğinde", enabled: true, template: "🔴 Node *{node_name}* çevrimdışı oldu!" },
-  { key: "node_up", label: "Node Çevrimiçi", description: "Node yeniden bağlandığında", enabled: false, template: "🟢 Node *{node_name}* yeniden çevrimiçi." },
-  { key: "user_created", label: "Yeni Kullanıcı", description: "Yeni kullanıcı oluşturulduğunda", enabled: false, template: "👤 Yeni kullanıcı: *{username}* ({plan} planı)" },
-  { key: "high_cpu", label: "Yüksek CPU", description: "CPU kullanımı %90 üzerine çıktığında", enabled: true, template: "🔥 Yüksek CPU kullanımı: *{cpu_usage}%*" },
-  { key: "expiry_warning", label: "Süre Uyarısı", description: "Kullanıcı süresinin dolmasına 3 gün kala", enabled: true, template: "⚠️ *{username}* hesabı {days} gün içinde dolacak." },
-  { key: "admin_login", label: "Admin Girişi", description: "Bir admin giriş yaptığında", enabled: false, template: "🔑 Admin *{admin}* giriş yaptı. IP: {ip}" },
+const ALL_EVENTS = [
+  { key: "user_expired", label: "Kullanıcı Süresi Doldu" },
+  { key: "data_limit", label: "Data Limiti Doldu" },
+  { key: "node_down", label: "Node Çevrimdışı" },
+  { key: "node_up", label: "Node Çevrimiçi" },
+  { key: "user_created", label: "Yeni Kullanıcı" },
+  { key: "high_cpu", label: "Yüksek CPU" },
+  { key: "expiry_warning", label: "Süre Uyarısı (3 gün)" },
+  { key: "admin_login", label: "Admin Girişi" },
 ];
 
 const COMMANDS = [
@@ -69,55 +69,74 @@ const COMMANDS = [
 ];
 
 export const TelegramBot: FC = () => {
-  const [botToken, setBotToken] = useState("7412345678:AAF_demo_token_xprobego_bot");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [chatIds, setChatIds] = useState("-100123456789, 987654321");
-  const [adminChatId, setAdminChatId] = useState("123456789");
-  const [botActive, setBotActive] = useState(true);
-  const [events, setEvents] = useState<NotifEvent[]>(defaultEvents);
+  const [settings, setSettings] = useState({
+    botToken: "", chatIds: "", adminChatId: "", botActive: false,
+    enabledEvents: [] as string[], eventTemplates: { ...DEFAULT_TEMPLATES },
+  });
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
   const toast = useToast();
 
+  useEffect(() => {
+    xpbApi.getBotSettings().then(data => {
+      setSettings({
+        botToken: data.botToken || "",
+        chatIds: data.chatIds || "",
+        adminChatId: data.adminChatId || "",
+        botActive: data.botActive || false,
+        enabledEvents: data.enabledEvents || [],
+        eventTemplates: { ...DEFAULT_TEMPLATES, ...(data.eventTemplates || {}) },
+      });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
   const toggleEvent = (key: string) => {
-    setEvents((prev) => prev.map((e) => e.key === key ? { ...e, enabled: !e.enabled } : e));
+    setSettings(s => ({
+      ...s,
+      enabledEvents: s.enabledEvents.includes(key)
+        ? s.enabledEvents.filter(e => e !== key)
+        : [...s.enabledEvents, key],
+    }));
   };
 
-  const updateTemplate = (key: string, template: string) => {
-    setEvents((prev) => prev.map((e) => e.key === key ? { ...e, template } : e));
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await xpbApi.saveBotSettings(settings);
+      toast({ title: "Bot ayarları kaydedildi", status: "success", duration: 2000 });
+    } catch (err: any) {
+      toast({ title: "Hata", description: err.message, status: "error", duration: 3000 });
+    } finally { setSaving(false); }
   };
 
-  const handleTest = () => {
-    toast({
-      title: "Test mesajı gönderildi",
-      description: "Bot: ✅ X-Pro Bego bağlantısı başarılı!",
-      status: "success",
-      duration: 3000,
-    });
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      await xpbApi.testBot();
+      toast({ title: "Test mesajı gönderildi ✅", description: "Telegram'ı kontrol edin", status: "success", duration: 3000 });
+    } catch (err: any) {
+      toast({ title: "Hata", description: err.message, status: "error", duration: 4000 });
+    } finally { setTesting(false); }
   };
 
-  const handleSave = () => {
-    toast({ title: "Bot ayarları kaydedildi", status: "success", duration: 2000 });
-  };
+  if (loading) return <VStack minH="100vh" bg="gray.900" justify="center"><Spinner color="blue.400" size="xl" /></VStack>;
 
   return (
     <VStack w="full" minH="100vh" bg="gray.900" spacing={0}>
-      <Box w="full" px={6} py={3} borderBottom="1px solid" borderColor="gray.700">
-        <Header />
-      </Box>
+      <Box w="full" px={6} py={3} borderBottom="1px solid" borderColor="gray.700"><Header /></Box>
       <Box w="full" maxW="1000px" mx="auto" px={6} py={6}>
         <HStack justify="space-between" mb={6} flexWrap="wrap" gap={3}>
           <HStack>
             <Text fontSize="2xl">🤖</Text>
             <Heading size="md" color="white">Telegram Bot Entegrasyonu</Heading>
-            <Badge colorScheme={botActive ? "green" : "red"}>{botActive ? "Aktif" : "Pasif"}</Badge>
+            <Badge colorScheme={settings.botActive ? "green" : "red"}>{settings.botActive ? "Aktif" : "Pasif"}</Badge>
           </HStack>
           <HStack>
-            <Button size="sm" leftIcon={<SendIcon />} variant="outline" colorScheme="cyan" onClick={handleTest}>
-              Test Gönder
-            </Button>
-            <Button size="sm" colorScheme="blue" onClick={handleSave}>
-              Kaydet
-            </Button>
+            <Button size="sm" leftIcon={<SendIcon />} variant="outline" colorScheme="cyan" onClick={handleTest} isLoading={testing}>Test Gönder</Button>
+            <Button size="sm" colorScheme="blue" onClick={handleSave} isLoading={saving}>Kaydet</Button>
           </HStack>
         </HStack>
 
@@ -126,24 +145,16 @@ export const TelegramBot: FC = () => {
             <Text fontWeight="bold" color="white">Bot Ayarları</Text>
             <HStack>
               <Text fontSize="sm" color="gray.400">Bot Aktif</Text>
-              <Switch isChecked={botActive} onChange={(e) => setBotActive(e.target.checked)} colorScheme="green" />
+              <Switch isChecked={settings.botActive} onChange={e => setSettings(s => ({ ...s, botActive: e.target.checked }))} colorScheme="green" />
             </HStack>
           </HStack>
           <VStack spacing={4}>
             <FormControl>
               <FormLabel color="gray.400" fontSize="sm">Bot Token</FormLabel>
               <InputGroup>
-                <Input
-                  bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono"
-                  type={showToken ? "text" : "password"}
-                  value={botToken}
-                  onChange={(e) => setBotToken(e.target.value)}
-                  placeholder="1234567890:AAF..."
-                />
+                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" type={showToken ? "text" : "password"} value={settings.botToken} onChange={e => setSettings(s => ({ ...s, botToken: e.target.value }))} placeholder="1234567890:AAF..." />
                 <InputRightElement>
-                  <Button size="xs" variant="ghost" onClick={() => setShowToken(!showToken)}>
-                    {showToken ? <HideIcon /> : <ShowIcon />}
-                  </Button>
+                  <Button size="xs" variant="ghost" onClick={() => setShowToken(!showToken)}>{showToken ? <HideIcon /> : <ShowIcon />}</Button>
                 </InputRightElement>
               </InputGroup>
               <FormHelperText color="gray.500" fontSize="xs">@BotFather'dan alınan token</FormHelperText>
@@ -151,13 +162,11 @@ export const TelegramBot: FC = () => {
             <HStack w="full">
               <FormControl>
                 <FormLabel color="gray.400" fontSize="sm">Bildirim Chat ID'leri (virgülle ayır)</FormLabel>
-                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" value={chatIds} onChange={(e) => setChatIds(e.target.value)} placeholder="-100..., 123..." />
-                <FormHelperText color="gray.500" fontSize="xs">Grup veya kullanıcı Chat ID'leri</FormHelperText>
+                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" value={settings.chatIds} onChange={e => setSettings(s => ({ ...s, chatIds: e.target.value }))} placeholder="-100..., 123..." />
               </FormControl>
               <FormControl>
                 <FormLabel color="gray.400" fontSize="sm">Admin Chat ID</FormLabel>
-                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" value={adminChatId} onChange={(e) => setAdminChatId(e.target.value)} placeholder="123..." />
-                <FormHelperText color="gray.500" fontSize="xs">Bot komutlarına yetkili ID</FormHelperText>
+                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" value={settings.adminChatId} onChange={e => setSettings(s => ({ ...s, adminChatId: e.target.value }))} placeholder="123..." />
               </FormControl>
             </HStack>
           </VStack>
@@ -166,29 +175,21 @@ export const TelegramBot: FC = () => {
         <Box bg="gray.800" borderRadius="xl" p={5} mb={5} border="1px solid" borderColor="gray.700">
           <Text fontWeight="bold" color="white" mb={4}>🔔 Bildirim Olayları</Text>
           <VStack spacing={3} align="stretch">
-            {events.map((e) => (
+            {ALL_EVENTS.map(e => (
               <Box key={e.key}>
                 <HStack justify="space-between" mb={1}>
-                  <VStack align="start" spacing={0}>
-                    <HStack>
-                      <Text color="white" fontSize="sm" fontWeight="medium">{e.label}</Text>
-                      {e.enabled && <Badge colorScheme="green" fontSize="2xs">Aktif</Badge>}
-                    </HStack>
-                    <Text color="gray.500" fontSize="xs">{e.description}</Text>
-                  </VStack>
                   <HStack>
-                    <Button size="xs" variant="ghost" colorScheme="blue" onClick={() => setEditingTemplate(editingTemplate === e.key ? null : e.key)}>
-                      Şablon
-                    </Button>
-                    <Switch isChecked={e.enabled} onChange={() => toggleEvent(e.key)} colorScheme="green" size="sm" />
+                    <Text color="white" fontSize="sm" fontWeight="medium">{e.label}</Text>
+                    {settings.enabledEvents.includes(e.key) && <Badge colorScheme="green" fontSize="2xs">Aktif</Badge>}
+                  </HStack>
+                  <HStack>
+                    <Button size="xs" variant="ghost" colorScheme="blue" onClick={() => setEditingTemplate(editingTemplate === e.key ? null : e.key)}>Şablon</Button>
+                    <Switch isChecked={settings.enabledEvents.includes(e.key)} onChange={() => toggleEvent(e.key)} colorScheme="green" size="sm" />
                   </HStack>
                 </HStack>
                 {editingTemplate === e.key && (
-                  <Textarea
-                    bg="gray.700" borderColor="gray.600" color="gray.300" fontSize="xs" fontFamily="mono"
-                    value={e.template} rows={2} mt={1}
-                    onChange={(ev) => updateTemplate(e.key, ev.target.value)}
-                  />
+                  <Textarea bg="gray.700" borderColor="gray.600" color="gray.300" fontSize="xs" fontFamily="mono" value={settings.eventTemplates[e.key] || ""} rows={2} mt={1}
+                    onChange={ev => setSettings(s => ({ ...s, eventTemplates: { ...s.eventTemplates, [e.key]: ev.target.value } }))} />
                 )}
                 <Divider borderColor="gray.700" mt={2} />
               </Box>
@@ -199,21 +200,12 @@ export const TelegramBot: FC = () => {
         <Box bg="gray.800" borderRadius="xl" p={5} border="1px solid" borderColor="gray.700">
           <Text fontWeight="bold" color="white" mb={4}>📋 Bot Komutları</Text>
           <Table size="sm" variant="unstyled">
-            <Thead>
-              <Tr>
-                <Th color="gray.400" fontSize="xs">Komut</Th>
-                <Th color="gray.400" fontSize="xs">Açıklama</Th>
-              </Tr>
-            </Thead>
+            <Thead><Tr><Th color="gray.400" fontSize="xs">Komut</Th><Th color="gray.400" fontSize="xs">Açıklama</Th></Tr></Thead>
             <Tbody>
-              {COMMANDS.map((c) => (
+              {COMMANDS.map(c => (
                 <Tr key={c.cmd} borderTop="1px solid" borderColor="gray.700">
-                  <Td py={2}>
-                    <Text fontFamily="mono" color="cyan.400" fontSize="sm">{c.cmd}</Text>
-                  </Td>
-                  <Td>
-                    <Text color="gray.300" fontSize="sm">{c.desc}</Text>
-                  </Td>
+                  <Td py={2}><Text fontFamily="mono" color="cyan.400" fontSize="sm">{c.cmd}</Text></Td>
+                  <Td><Text color="gray.300" fontSize="sm">{c.desc}</Text></Td>
                 </Tr>
               ))}
             </Tbody>

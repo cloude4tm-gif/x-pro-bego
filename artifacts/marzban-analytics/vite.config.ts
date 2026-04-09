@@ -156,6 +156,13 @@ export default defineConfig({
     host: "0.0.0.0",
     allowedHosts: true,
     fs: { strict: false },
+    proxy: {
+      "/xpbapi": {
+        target: "http://localhost:8080",
+        rewrite: (path) => path.replace(/^\/xpbapi/, "/api"),
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port,

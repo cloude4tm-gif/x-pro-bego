@@ -5,6 +5,7 @@ import {
   Checkbox,
   CheckboxGroup,
   FormControl,
+  FormHelperText,
   FormLabel,
   HStack,
   Heading,
@@ -19,211 +20,209 @@ import {
   ModalOverlay,
   Select,
   SimpleGrid,
-  Stack,
+  Spinner,
+  Switch,
   Table,
   Tbody,
   Td,
   Text,
   Th,
   Thead,
-  Tooltip,
   Tr,
   VStack,
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
-import {
-  ArrowPathIcon,
-  LinkIcon,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, TrashIcon, PencilIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { chakra } from "@chakra-ui/react";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 import { Header } from "components/Header";
+import { xpbApi } from "service/xpbApi";
 
-const EditIcon = chakra(PencilIcon, { baseStyle: { w: 4, h: 4 } });
-const DeleteIcon = chakra(TrashIcon, { baseStyle: { w: 4, h: 4 } });
 const AddIcon = chakra(PlusIcon, { baseStyle: { w: 4, h: 4 } });
-const TestIcon = chakra(ArrowPathIcon, { baseStyle: { w: 4, h: 4 } });
+const DeleteIcon = chakra(TrashIcon, { baseStyle: { w: 4, h: 4 } });
+const EditIcon = chakra(PencilIcon, { baseStyle: { w: 4, h: 4 } });
+const TestIcon = chakra(PaperAirplaneIcon, { baseStyle: { w: 4, h: 4 } });
 
 const ALL_EVENTS = [
-  { key: "user.created", label: "Kullanıcı Oluşturuldu", color: "green" },
-  { key: "user.deleted", label: "Kullanıcı Silindi", color: "red" },
-  { key: "user.expired", label: "Kullanıcı Süresi Doldu", color: "orange" },
-  { key: "user.data_limit_reached", label: "Data Limiti Doldu", color: "red" },
-  { key: "user.updated", label: "Kullanıcı Güncellendi", color: "blue" },
-  { key: "node.down", label: "Node Çevrimdışı", color: "red" },
-  { key: "node.up", label: "Node Çevrimiçi", color: "green" },
-  { key: "admin.login", label: "Admin Girişi", color: "purple" },
-  { key: "system.high_cpu", label: "Yüksek CPU (%90+)", color: "orange" },
-  { key: "system.high_ram", label: "Yüksek RAM (%90+)", color: "orange" },
-  { key: "system.disk_full", label: "Disk Dolmak Üzere", color: "red" },
+  "user.created", "user.expired", "user.data_limit", "user.deleted",
+  "node.down", "node.up", "backup.created", "backup.failed",
+  "admin.login", "suspicious.traffic", "system.alert",
 ];
 
-interface Webhook {
-  id: number;
-  name: string;
-  url: string;
-  secret: string;
-  events: string[];
-  method: "POST" | "GET";
-  active: boolean;
-  lastTriggered: string | null;
-  triggerCount: number;
-  lastStatus?: number;
-}
-
-const initialWebhooks: Webhook[] = [
-  {
-    id: 1, name: "Telegram Bildirim Bot", url: "https://api.telegram.org/bot.../sendMessage",
-    secret: "tg_secret_123", events: ["user.expired", "user.data_limit_reached", "node.down"],
-    method: "POST", active: true, lastTriggered: "2026-04-09 14:22:10", triggerCount: 245, lastStatus: 200,
-  },
-  {
-    id: 2, name: "Discord Sunucu", url: "https://discord.com/api/webhooks/...",
-    secret: "", events: ["node.down", "node.up", "system.high_cpu"],
-    method: "POST", active: true, lastTriggered: "2026-04-08 09:15:33", triggerCount: 18, lastStatus: 204,
-  },
-  {
-    id: 3, name: "Özel Monitoring", url: "https://monitor.myserver.com/hook",
-    secret: "my_monitor_key", events: ["user.created", "admin.login"],
-    method: "POST", active: false, lastTriggered: null, triggerCount: 0,
-  },
-];
-
-const emptyForm: Omit<Webhook, "id" | "lastTriggered" | "triggerCount" | "lastStatus"> = {
-  name: "", url: "", secret: "", events: [], method: "POST", active: true,
-};
+const emptyForm = { name: "", url: "", secret: "", events: [] as string[], method: "POST", active: true };
 
 export const WebhookManager: FC = () => {
-  const [webhooks, setWebhooks] = useState<Webhook[]>(initialWebhooks);
-  const [editing, setEditing] = useState<Webhook | null>(null);
-  const [form, setForm] = useState<Omit<Webhook, "id" | "lastTriggered" | "triggerCount" | "lastStatus">>(emptyForm);
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState<any>(emptyForm);
+  const [testingId, setTestingId] = useState<number | null>(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm(emptyForm);
-    onOpen();
+  const load = async () => {
+    try { const data = await xpbApi.getWebhooks(); setWebhooks(data); }
+    catch { /* ignore */ } finally { setLoading(false); }
   };
 
-  const openEdit = (w: Webhook) => {
-    setEditing(w);
-    setForm({ name: w.name, url: w.url, secret: w.secret, events: [...w.events], method: w.method, active: w.active });
-    onOpen();
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => { setEditingId(null); setFormData(emptyForm); onOpen(); };
+  const openEdit = (w: any) => { setEditingId(w.id); setFormData({ name: w.name, url: w.url, secret: w.secret, events: w.events, method: w.method, active: w.active }); onOpen(); };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.url) return;
+    try {
+      if (editingId) {
+        const u = await xpbApi.updateWebhook(editingId, formData);
+        setWebhooks(p => p.map(w => w.id === editingId ? u : w));
+        toast({ title: "Webhook güncellendi", status: "success", duration: 2000 });
+      } else {
+        const c = await xpbApi.createWebhook(formData);
+        setWebhooks(p => [...p, c]);
+        toast({ title: "Webhook oluşturuldu", status: "success", duration: 2000 });
+      }
+      onClose();
+    } catch (err: any) { toast({ title: "Hata", description: err.message, status: "error", duration: 3000 }); }
   };
 
-  const handleSave = () => {
-    if (!form.url) return;
-    if (editing) {
-      setWebhooks((prev) => prev.map((w) => w.id === editing.id ? { ...w, ...form } : w));
-      toast({ title: "Webhook güncellendi", status: "success", duration: 2000 });
-    } else {
-      setWebhooks((prev) => [...prev, { ...form, id: Date.now(), lastTriggered: null, triggerCount: 0 }]);
-      toast({ title: "Webhook oluşturuldu", status: "success", duration: 2000 });
-    }
-    onClose();
+  const handleDelete = async (id: number) => {
+    try { await xpbApi.deleteWebhook(id); setWebhooks(p => p.filter(w => w.id !== id)); toast({ title: "Webhook silindi", status: "info", duration: 2000 }); }
+    catch (err: any) { toast({ title: "Hata", description: err.message, status: "error", duration: 3000 }); }
   };
 
-  const handleDelete = (id: number) => {
-    setWebhooks((prev) => prev.filter((w) => w.id !== id));
-    toast({ title: "Webhook silindi", status: "info", duration: 2000 });
+  const handleTest = async (id: number) => {
+    setTestingId(id);
+    try {
+      const r = await xpbApi.testWebhook(id);
+      setWebhooks(p => p.map(w => w.id === id ? { ...w, lastStatus: r.status, lastTriggered: new Date().toISOString() } : w));
+      toast({ title: `Test gönderildi — HTTP ${r.status}`, status: r.status >= 200 && r.status < 300 ? "success" : "warning", duration: 3000 });
+    } catch (err: any) { toast({ title: "Hata", description: err.message, status: "error", duration: 3000 }); }
+    finally { setTestingId(null); }
   };
 
-  const handleTest = (w: Webhook) => {
-    toast({ title: `"${w.name}" test isteği gönderildi`, description: "200 OK simüle edildi", status: "success", duration: 3000 });
+  const toggleActive = async (w: any) => {
+    try {
+      const u = await xpbApi.updateWebhook(w.id, { ...w, active: !w.active });
+      setWebhooks(p => p.map(wh => wh.id === w.id ? u : wh));
+    } catch { /* ignore */ }
   };
 
   return (
     <VStack w="full" minH="100vh" bg="gray.900" spacing={0}>
-      <Box w="full" px={6} py={3} borderBottom="1px solid" borderColor="gray.700">
-        <Header />
-      </Box>
-      <Box w="full" maxW="1200px" mx="auto" px={6} py={6}>
+      <Box w="full" px={6} py={3} borderBottom="1px solid" borderColor="gray.700"><Header /></Box>
+      <Box w="full" maxW="1300px" mx="auto" px={6} py={6}>
         <HStack justify="space-between" mb={6} flexWrap="wrap" gap={3}>
           <HStack>
-            <LinkIcon style={{ width: 24, height: 24, color: "#63B3ED" }} />
+            <Text fontSize="xl">🔗</Text>
             <Heading size="md" color="white">Webhook Yönetimi</Heading>
           </HStack>
-          <Button size="sm" leftIcon={<AddIcon />} colorScheme="blue" onClick={openCreate}>
-            Yeni Webhook
-          </Button>
+          <Button size="sm" leftIcon={<AddIcon />} colorScheme="orange" onClick={openCreate}>Yeni Webhook</Button>
         </HStack>
 
-        <VStack spacing={4} align="stretch">
-          {webhooks.map((w) => (
-            <Box key={w.id} bg="gray.800" borderRadius="xl" border="1px solid" borderColor={w.active ? "gray.700" : "gray.800"} p={5} opacity={w.active ? 1 : 0.6}>
-              <HStack justify="space-between" mb={3} flexWrap="wrap" gap={2}>
-                <HStack>
-                  <Text fontWeight="bold" color="white">{w.name}</Text>
-                  <Badge colorScheme={w.active ? "green" : "gray"}>{w.active ? "Aktif" : "Pasif"}</Badge>
-                  {w.lastStatus && (
-                    <Badge colorScheme={w.lastStatus < 300 ? "green" : "red"}>HTTP {w.lastStatus}</Badge>
-                  )}
-                </HStack>
-                <HStack>
-                  <Tooltip label="Test Et">
-                    <IconButton size="sm" icon={<TestIcon />} aria-label="Test" variant="outline" colorScheme="cyan" onClick={() => handleTest(w)} />
-                  </Tooltip>
-                  <IconButton size="sm" icon={<EditIcon />} aria-label="Düzenle" variant="outline" colorScheme="blue" onClick={() => openEdit(w)} />
-                  <IconButton size="sm" icon={<DeleteIcon />} aria-label="Sil" variant="outline" colorScheme="red" onClick={() => handleDelete(w.id)} />
-                </HStack>
-              </HStack>
-              <Text fontFamily="mono" fontSize="sm" color="blue.300" mb={3} isTruncated>{w.url}</Text>
-              <HStack flexWrap="wrap" spacing={2} mb={3}>
-                {w.events.map((e) => {
-                  const ev = ALL_EVENTS.find((a) => a.key === e);
-                  return <Badge key={e} colorScheme={ev?.color || "gray"} fontSize="xs">{ev?.label || e}</Badge>;
-                })}
-              </HStack>
-              <HStack fontSize="xs" color="gray.500" spacing={4}>
-                <Text>Tetiklenme: {w.triggerCount} kez</Text>
-                <Text>Son: {w.lastTriggered || "Hiç"}</Text>
-                <Badge colorScheme="purple">{w.method}</Badge>
-              </HStack>
+        <HStack mb={6} gap={4}>
+          {[
+            { label: "Toplam Webhook", value: webhooks.length, color: "blue.400" },
+            { label: "Aktif", value: webhooks.filter(w => w.active).length, color: "green.400" },
+            { label: "Toplam Tetiklenme", value: webhooks.reduce((s, w) => s + (w.triggerCount || 0), 0), color: "orange.400" },
+          ].map(({ label, value, color }) => (
+            <Box key={label} bg="gray.800" borderRadius="xl" p={4} flex={1} border="1px solid" borderColor="gray.700">
+              <Text color="gray.400" fontSize="sm">{label}</Text>
+              <Text color={color} fontSize="2xl" fontWeight="bold">{value}</Text>
             </Box>
           ))}
-        </VStack>
+        </HStack>
+
+        {loading ? (
+          <HStack justify="center" py={16}><Spinner color="orange.400" size="xl" /></HStack>
+        ) : (
+          <Box bg="gray.800" borderRadius="xl" overflow="hidden" border="1px solid" borderColor="gray.700">
+            <Table variant="unstyled">
+              <Thead bg="gray.750">
+                <Tr>
+                  {["Ad", "URL", "Olaylar", "Tetiklenme", "Son Durum", "Aktif", "İşlemler"].map(h => (
+                    <Th key={h} color="gray.400" fontSize="xs" py={3}>{h}</Th>
+                  ))}
+                </Tr>
+              </Thead>
+              <Tbody>
+                {webhooks.length === 0 ? (
+                  <Tr><Td colSpan={7} textAlign="center" py={10}><Text color="gray.500">Henüz webhook yok.</Text></Td></Tr>
+                ) : webhooks.map(w => (
+                  <Tr key={w.id} borderTop="1px solid" borderColor="gray.700" _hover={{ bg: "gray.750" }} opacity={w.active ? 1 : 0.6}>
+                    <Td py={3}>
+                      <Text color="white" fontWeight="medium">{w.name}</Text>
+                      <Badge colorScheme="gray" fontSize="2xs">{w.method}</Badge>
+                    </Td>
+                    <Td maxW="200px">
+                      <Text fontFamily="mono" color="cyan.400" fontSize="xs" isTruncated title={w.url}>{w.url}</Text>
+                    </Td>
+                    <Td>
+                      <HStack flexWrap="wrap" gap={1}>
+                        {(w.events || []).slice(0, 3).map((e: string) => <Badge key={e} colorScheme="purple" fontSize="2xs">{e}</Badge>)}
+                        {(w.events || []).length > 3 && <Badge colorScheme="gray" fontSize="2xs">+{(w.events || []).length - 3}</Badge>}
+                      </HStack>
+                    </Td>
+                    <Td><Text color="gray.400" fontSize="sm">{w.triggerCount || 0}x</Text></Td>
+                    <Td>
+                      {w.lastStatus ? (
+                        <Badge colorScheme={w.lastStatus >= 200 && w.lastStatus < 300 ? "green" : "red"}>{w.lastStatus}</Badge>
+                      ) : <Text color="gray.500" fontSize="xs">—</Text>}
+                    </Td>
+                    <Td><Switch isChecked={w.active} onChange={() => toggleActive(w)} colorScheme="green" /></Td>
+                    <Td>
+                      <HStack spacing={1}>
+                        <IconButton size="xs" icon={<TestIcon />} aria-label="Test" colorScheme="cyan" variant="ghost" isLoading={testingId === w.id} onClick={() => handleTest(w.id)} />
+                        <IconButton size="xs" icon={<EditIcon />} aria-label="Düzenle" colorScheme="blue" variant="ghost" onClick={() => openEdit(w)} />
+                        <IconButton size="xs" icon={<DeleteIcon />} aria-label="Sil" colorScheme="red" variant="ghost" onClick={() => handleDelete(w.id)} />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
       </Box>
 
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay backdropFilter="blur(6px)" />
         <ModalContent bg="gray.800" border="1px solid" borderColor="gray.700">
-          <ModalHeader color="white">{editing ? "Webhook Düzenle" : "Yeni Webhook"}</ModalHeader>
+          <ModalHeader color="white">{editingId ? "Webhook Düzenle" : "Yeni Webhook"}</ModalHeader>
           <ModalCloseButton color="gray.400" />
           <ModalBody>
             <VStack spacing={4}>
               <HStack w="full">
                 <FormControl>
                   <FormLabel color="gray.400" fontSize="sm">Ad</FormLabel>
-                  <Input bg="gray.700" borderColor="gray.600" color="white" placeholder="Telegram Bot..." value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                  <Input bg="gray.700" borderColor="gray.600" color="white" value={formData.name} onChange={e => setFormData((f: any) => ({ ...f, name: e.target.value }))} />
                 </FormControl>
-                <FormControl flex="0 0 100px">
-                  <FormLabel color="gray.400" fontSize="sm">Metod</FormLabel>
-                  <Select bg="gray.700" borderColor="gray.600" color="white" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as "POST" | "GET" }))}>
+                <FormControl flex="0 0 120px">
+                  <FormLabel color="gray.400" fontSize="sm">Method</FormLabel>
+                  <Select bg="gray.700" borderColor="gray.600" color="white" value={formData.method} onChange={e => setFormData((f: any) => ({ ...f, method: e.target.value }))}>
                     <option value="POST">POST</option>
                     <option value="GET">GET</option>
+                    <option value="PUT">PUT</option>
                   </Select>
                 </FormControl>
               </HStack>
               <FormControl>
                 <FormLabel color="gray.400" fontSize="sm">URL</FormLabel>
-                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" placeholder="https://..." value={form.url} onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
+                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" type="url" placeholder="https://..." value={formData.url} onChange={e => setFormData((f: any) => ({ ...f, url: e.target.value }))} />
               </FormControl>
               <FormControl>
-                <FormLabel color="gray.400" fontSize="sm">Secret Key (isteğe bağlı)</FormLabel>
-                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" placeholder="X-Secret header olarak gönderilir" value={form.secret} onChange={(e) => setForm((f) => ({ ...f, secret: e.target.value }))} />
+                <FormLabel color="gray.400" fontSize="sm">Secret (opsiyonel)</FormLabel>
+                <Input bg="gray.700" borderColor="gray.600" color="white" fontFamily="mono" type="password" value={formData.secret} onChange={e => setFormData((f: any) => ({ ...f, secret: e.target.value }))} />
+                <FormHelperText color="gray.500" fontSize="xs">X-Secret header olarak gönderilir.</FormHelperText>
               </FormControl>
               <FormControl>
-                <FormLabel color="gray.400" fontSize="sm">Olaylar (en az 1 seçin)</FormLabel>
-                <CheckboxGroup value={form.events} onChange={(vals) => setForm((f) => ({ ...f, events: vals as string[] }))}>
+                <FormLabel color="gray.400" fontSize="sm">Olaylar</FormLabel>
+                <CheckboxGroup value={formData.events} onChange={(v) => setFormData((f: any) => ({ ...f, events: v }))}>
                   <SimpleGrid columns={2} spacing={2}>
-                    {ALL_EVENTS.map((e) => (
-                      <Checkbox key={e.key} value={e.key} colorScheme={e.color as any}>
-                        <Text fontSize="xs" color="gray.300">{e.label}</Text>
+                    {ALL_EVENTS.map(ev => (
+                      <Checkbox key={ev} value={ev} colorScheme="orange">
+                        <Text color="gray.300" fontSize="xs">{ev}</Text>
                       </Checkbox>
                     ))}
                   </SimpleGrid>
@@ -233,7 +232,7 @@ export const WebhookManager: FC = () => {
           </ModalBody>
           <ModalFooter>
             <Button variant="ghost" color="gray.400" mr={3} onClick={onClose}>İptal</Button>
-            <Button colorScheme="blue" onClick={handleSave}>Kaydet</Button>
+            <Button colorScheme="orange" onClick={handleSave}>Kaydet</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
