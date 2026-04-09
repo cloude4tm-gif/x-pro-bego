@@ -53,9 +53,22 @@ async function handleProxy(req: Request, res: Response): Promise<void> {
     });
 
     const contentType = response.headers.get("content-type") || "application/json";
+    const responseBody = await response.text();
+
+    // Log non-2xx responses so we can see what Marzban actually returns
+    if (!response.ok) {
+      req.log?.warn({
+        targetUrl,
+        method: req.method,
+        requestBodyPreview: bodyContent ? bodyContent.slice(0, 200) : "(empty)",
+        status: response.status,
+        marzbanResponse: responseBody.slice(0, 500),
+      }, "Marzban returned error");
+    }
+
     res.status(response.status);
     res.setHeader("Content-Type", contentType);
-    res.send(await response.text());
+    res.send(responseBody);
   } catch (err: any) {
     res.status(502).json({ error: `Marzban sunucusuna ulaşılamadı: ${err.message}` });
   }

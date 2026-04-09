@@ -216,19 +216,28 @@ const CoreSettingModalContent: FC = () => {
         });
       })
       .catch((e) => {
+        const errorData = e?.response?._data;
         let message = t("core.generalErrorMessage");
-        if (typeof e.response._data.detail === "object")
-          message =
-            e.response._data.detail[Object.keys(e.response._data.detail)[0]];
-        if (typeof e.response._data.detail === "string")
-          message = e.response._data.detail;
+        if (typeof errorData?.detail === "string" && errorData.detail) {
+          message = errorData.detail;
+        } else if (Array.isArray(errorData?.detail) && errorData.detail[0]) {
+          const item = errorData.detail[0];
+          message = item?.msg ? `${item.loc?.join(".")}: ${item.msg}` : JSON.stringify(item);
+        } else if (typeof errorData?.detail === "object" && errorData?.detail !== null) {
+          const firstKey = Object.keys(errorData.detail)[0];
+          message = firstKey ? String(errorData.detail[firstKey]) : message;
+        } else if (errorData?.error) {
+          message = String(errorData.error);
+        } else if (e?.message) {
+          message = e.message;
+        }
 
         toast({
           title: message,
           status: "error",
           isClosable: true,
           position: "top",
-          duration: 3000,
+          duration: 6000,
         });
       });
   };
