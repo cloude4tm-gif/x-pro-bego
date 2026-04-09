@@ -229,10 +229,30 @@ success "Xray konfigürasyonu: ${XRAY_CONFIG_PATH}"
 
 # ─── PostgreSQL ──────────────────────────────────────────────
 info "PostgreSQL yapılandırılıyor..."
-systemctl enable postgresql --quiet
+
+# PostgreSQL binary'lerinin tam yolunu bul
+PG_BIN=$(find /usr/lib/postgresql -name "psql" 2>/dev/null | sort -V | tail -1 || true)
+if [ -z "$PG_BIN" ]; then PG_BIN="psql"; fi
+
+systemctl enable postgresql --quiet 2>/dev/null || true
 systemctl start postgresql
 
-sudo -u postgres psql -q << PSQL
+# PostgreSQL hazır olana kadar bekle
+PGREADY=0
+for i in $(seq 1 15); do
+  if su - postgres -c "cd /tmp && ${PG_BIN} -c '\q' postgres" &>/dev/null 2>&1; then
+    PGREADY=1; break
+  fi
+  sleep 1
+done
+if [ "$PGREADY" -eq 0 ]; then
+  warn "PostgreSQL başlatılamadı, tekrar deneniyor..."
+  systemctl restart postgresql
+  sleep 5
+fi
+
+# Tüm psql komutlarını /tmp üzerinden çalıştır (getcwd sorunundan kaçınmak için)
+su - postgres -c "cd /tmp && ${PG_BIN} -q postgres" << PSQL
 DO \$\$ BEGIN
   IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = '${DB_USER}') THEN
     CREATE ROLE ${DB_USER} LOGIN PASSWORD '${DB_PASS}';
