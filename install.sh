@@ -116,6 +116,11 @@ info "Uygulama klonlanıyor..."
 if [ -d "$APP_DIR/.git" ]; then
   warn "Mevcut kurulum bulundu, güncelleniyor..."
   cd "$APP_DIR" && git pull origin main 2>/dev/null || git pull origin master
+elif [ -d "$APP_DIR" ]; then
+  warn "Yarım kalmış kurulum dizini temizleniyor..."
+  rm -rf "$APP_DIR"
+  git clone "$GITHUB_REPO" "$APP_DIR"
+  success "Uygulama klonlandı: $APP_DIR"
 else
   git clone "$GITHUB_REPO" "$APP_DIR"
   success "Uygulama klonlandı: $APP_DIR"
