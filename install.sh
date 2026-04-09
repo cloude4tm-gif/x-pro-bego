@@ -156,10 +156,14 @@ pnpm --filter @workspace/db push 2>&1 | tail -5
 success "Veritabanı tabloları hazır"
 
 # ─── Frontend build ───────────────────────────────────────────
-info "Frontend derleniyor..."
-cd "$APP_DIR"
-pnpm --filter @workspace/marzban-analytics run build 2>&1 | tail -5
-success "Frontend derlendi"
+if [ -d "$APP_DIR/artifacts/marzban-analytics/dist/public" ]; then
+  success "Frontend önceden derlenmiş (dist mevcut), derleme atlanıyor"
+else
+  info "Frontend derleniyor..."
+  cd "$APP_DIR"
+  pnpm --filter @workspace/marzban-analytics run build 2>&1 | tail -5
+  success "Frontend derlendi"
+fi
 
 # ─── API Server build ─────────────────────────────────────────
 info "API Server derleniyor..."
@@ -211,8 +215,8 @@ server {
     listen 80;
     server_name ${SERVER_DOMAIN};
 
-    # Frontend static dosyalar
-    root ${APP_DIR}/artifacts/marzban-analytics/dist;
+    # Frontend static dosyalar (Vite outDir: dist/public)
+    root ${APP_DIR}/artifacts/marzban-analytics/dist/public;
     index index.html;
 
     # Enterprise API → API Server (port ${API_PORT})
