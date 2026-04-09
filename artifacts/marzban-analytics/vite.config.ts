@@ -30,8 +30,11 @@ function marzbanMockPlugin(): Plugin {
           res.end(JSON.stringify(data));
         };
 
+        // Normalize path: strip /api prefix so mock handles both old and new Marzban paths
+        const rawUrl = url.startsWith("/api/") ? url.slice(4) : url;
+
         const MOCK_PATHS = ["/admin/token", "/admin", "/admins", "/system", "/users", "/inbounds", "/nodes", "/hosts", "/node"];
-        const isMockPath = MOCK_PATHS.some(p => url === p || url.startsWith(p + "?") || url.startsWith(p + "/")) || url === "/users/connections";
+        const isMockPath = MOCK_PATHS.some(p => rawUrl === p || rawUrl.startsWith(p + "?") || rawUrl.startsWith(p + "/")) || rawUrl === "/users/connections";
 
         if (!isMockPath) return next();
 
@@ -44,23 +47,23 @@ function marzbanMockPlugin(): Plugin {
           return;
         }
 
-        if (url === "/admin/token") {
+        if (rawUrl === "/admin/token") {
           return json({ access_token: "demo_token_xprobego", token_type: "bearer" });
         }
-        if (url === "/admin" && req.method === "GET") {
+        if (rawUrl === "/admin" && req.method === "GET") {
           return json({ username: "admin", is_sudo: true, telegram_id: null, discord_webhook: null });
         }
-        if (url.startsWith("/admin/") && (req.method === "PUT" || req.method === "DELETE")) {
+        if (rawUrl.startsWith("/admin/") && (req.method === "PUT" || req.method === "DELETE")) {
           return json({ success: true });
         }
-        if (url === "/admins") {
+        if (rawUrl === "/admins") {
           return json([
             { username: "admin", is_sudo: true, telegram_id: "@xprobego_admin", discord_webhook: null, users_limit: null, data_limit_gb: null, expire_days_limit: null },
             { username: "operator1", is_sudo: false, telegram_id: null, discord_webhook: null, users_limit: 50, data_limit_gb: 100, expire_days_limit: 90 },
             { username: "reseller_tr", is_sudo: false, telegram_id: null, discord_webhook: null, users_limit: 20, data_limit_gb: 50, expire_days_limit: 30 },
           ]);
         }
-        if (url === "/users/connections") {
+        if (rawUrl === "/users/connections") {
           const now = new Date();
           const ago = (minutes: number) => new Date(now.getTime() - minutes * 60000).toISOString();
           return json([
@@ -72,7 +75,7 @@ function marzbanMockPlugin(): Plugin {
             { username: "on_hold_user", ip: "94.55.33.200", country_code: "AE", country_name: "UAE", city: "Dubai", device: "Windows PC", os: "Windows 11", last_seen: ago(1440), node: "Germany-01", status: "offline" },
           ]);
         }
-        if (url === "/system" || url.startsWith("/system?")) {
+        if (rawUrl === "/system" || rawUrl.startsWith("/system?")) {
           return json({
             version: "0.5.2",
             mem_total: 8589934592,
@@ -89,10 +92,10 @@ function marzbanMockPlugin(): Plugin {
             outgoing_bandwidth_speed: 2097152,
           });
         }
-        if (url === "/users" || url.startsWith("/users?")) {
+        if (rawUrl === "/users" || rawUrl.startsWith("/users?")) {
           return json({ users: mockUsers, total: mockUsers.length });
         }
-        if (url === "/inbounds" || url.startsWith("/inbounds?")) {
+        if (rawUrl === "/inbounds" || rawUrl.startsWith("/inbounds?")) {
           return json({
             vless: [{ tag: "VLESS TCP REALITY", protocol: "vless", network: "tcp", tls: "reality", port: 443 }],
             vmess: [{ tag: "VMess WebSocket", protocol: "vmess", network: "ws", tls: "tls", port: 8443 }],
@@ -100,14 +103,14 @@ function marzbanMockPlugin(): Plugin {
             shadowsocks: [{ tag: "Shadowsocks TCP", protocol: "shadowsocks", network: "tcp", tls: "none", port: 1080 }],
           });
         }
-        if (url === "/nodes" || url.startsWith("/nodes?")) {
+        if (rawUrl === "/nodes" || rawUrl.startsWith("/nodes?")) {
           return json([
             { id: 1, name: "Germany-01", address: "de1.example.com", port: 62050, api_port: 62051, status: "connected", xray_version: "1.8.3", usage_coefficient: 1.0 },
             { id: 2, name: "Netherlands-01", address: "nl1.example.com", port: 62050, api_port: 62051, status: "connected", xray_version: "1.8.3", usage_coefficient: 1.0 },
             { id: 3, name: "Finland-01", address: "fi1.example.com", port: 62050, api_port: 62051, status: "error", xray_version: "1.8.1", usage_coefficient: 1.0 },
           ]);
         }
-        if (url === "/hosts" || url.startsWith("/hosts?")) {
+        if (rawUrl === "/hosts" || rawUrl.startsWith("/hosts?")) {
           return json({
             "VLESS TCP REALITY": [{ remark: "DE-01", address: "de1.example.com", port: 443, sni: "google.com", host: "", path: "/", security: "reality", alpn: "", fingerprint: "chrome", allowinsecure: false, is_disabled: false, mux_enable: false }],
             "VMess WebSocket": [{ remark: "NL-01", address: "nl1.example.com", port: 8443, sni: "cdn.example.com", host: "cdn.example.com", path: "/ws", security: "tls", alpn: "", fingerprint: "", allowinsecure: false, is_disabled: false, mux_enable: false }],

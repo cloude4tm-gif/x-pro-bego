@@ -36,9 +36,12 @@ export const fetcher = <T = any>(
     };
   }
 
+  // Marzban v0.4+ uses /api/ prefix for all endpoints
+  const apiUrl = url.startsWith("/api/") ? url : `/api${url.startsWith("/") ? url : `/${url}`}`;
+
   if (PROXY_BASE) {
     // Production: proxy through API server, pass Marzban URL as header
-    const cleanPath = url.startsWith("/") ? url.slice(1) : url;
+    const cleanPath = apiUrl.startsWith("/") ? apiUrl.slice(1) : apiUrl;
     ops["headers"] = {
       ...(ops?.headers || {}),
       "X-Marzban-Server": serverUrl,
@@ -47,7 +50,7 @@ export const fetcher = <T = any>(
   }
 
   // Dev: call Marzban server directly (intercepted by vite mock middleware)
-  return $fetch<T>(url, { ...ops, baseURL: serverUrl });
+  return $fetch<T>(apiUrl, { ...ops, baseURL: serverUrl });
 };
 
 export const fetch = fetcher;

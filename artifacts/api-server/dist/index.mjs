@@ -56301,22 +56301,32 @@ async function handleProxy(req, res) {
   }
   const subPath = req.url.replace(/^\/?/, "");
   const targetUrl = `${serverUrl.replace(/\/+$/, "")}/${subPath}`;
-  const forwardHeaders = { "Content-Type": "application/json" };
+  const forwardHeaders = {};
   if (req.headers["authorization"]) {
     forwardHeaders["Authorization"] = req.headers["authorization"];
   }
   const hasBody = ["POST", "PUT", "PATCH"].includes(req.method.toUpperCase());
+  let bodyContent;
+  if (hasBody && req.body) {
+    const contentType = (req.headers["content-type"] || "").toLowerCase();
+    if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart")) {
+      bodyContent = new URLSearchParams(req.body).toString();
+      forwardHeaders["Content-Type"] = "application/x-www-form-urlencoded";
+    } else {
+      bodyContent = JSON.stringify(req.body);
+      forwardHeaders["Content-Type"] = "application/json";
+    }
+  }
   try {
     const response = await fetch(targetUrl, {
       method: req.method,
       headers: forwardHeaders,
-      body: hasBody ? JSON.stringify(req.body) : void 0
+      body: bodyContent
     });
     const contentType = response.headers.get("content-type") || "application/json";
     res.status(response.status);
     res.setHeader("Content-Type", contentType);
-    const text2 = await response.text();
-    res.send(text2);
+    res.send(await response.text());
   } catch (err) {
     res.status(502).json({ error: `Marzban sunucusuna ula\u015F\u0131lamad\u0131: ${err.message}` });
   }

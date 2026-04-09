@@ -78,12 +78,12 @@ export const Login: FC = () => {
   const login = (values: FieldValues) => {
     setError("");
     setServerUrl(values.serverUrl as string);
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append("username", values.username);
     formData.append("password", values.password);
     formData.append("grant_type", "password");
     setLoading(true);
-    fetch("/admin/token", { method: "post", body: formData })
+    fetch("/admin/token", { method: "post", body: formData, headers: { "Content-Type": "application/x-www-form-urlencoded" } })
       .then(({ access_token: token }) => {
         setAuthToken(token);
         navigate("/");
